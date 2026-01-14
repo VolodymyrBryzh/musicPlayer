@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, CSSProperties } from 'react';
 import Visualizer from './components/Visualizer';
 import SettingsPanel from './components/SettingsPanel';
@@ -21,6 +20,7 @@ const App: React.FC = () => {
     const [activePlaylist, setActivePlaylist] = useState<File[]>([]);
     const [currentTrackIndex, setCurrentTrackIndex] = useState<number>(0);
     const [theme, setTheme] = useState<ThemeMode>(ThemeMode.MONO);
+    const [mobileView, setMobileView] = useState<'player' | 'settings' | 'queue'>('player');
     const [metadata, setMetadata] = useState<SongMetadata>({
         title: 'Waiting...',
         artist: 'Select folder to start',
@@ -270,10 +270,12 @@ const App: React.FC = () => {
                 extractedColor={metadata.color} 
             />
 
-            <div className="flex items-center justify-center relative z-10">
+            <div className="flex flex-col md:flex-row items-center justify-center relative z-10 w-full h-full md:w-auto md:h-auto">
                 <SettingsPanel 
                     currentTheme={theme} 
-                    onSetTheme={setTheme} 
+                    onSetTheme={setTheme}
+                    isOpenMobile={mobileView === 'settings'}
+                    onCloseMobile={() => setMobileView('player')}
                 />
                 
                 <PlayerControls 
@@ -286,6 +288,8 @@ const App: React.FC = () => {
                     onToggleShuffle={toggleShuffle}
                     onToggleRepeat={() => setPlayerState(prev => ({ ...prev, isRepeatOne: !prev.isRepeatOne }))}
                     onSeek={seek}
+                    onOpenSettings={() => setMobileView('settings')}
+                    onOpenQueue={() => setMobileView('queue')}
                 />
 
                 <QueueList 
@@ -293,6 +297,8 @@ const App: React.FC = () => {
                     currentTrackIndex={currentTrackIndex}
                     onTrackSelect={(idx) => { setCurrentTrackIndex(idx); loadTrack(idx); }}
                     onFilesSelected={handleFilesSelected}
+                    isOpenMobile={mobileView === 'queue'}
+                    onCloseMobile={() => setMobileView('player')}
                 />
             </div>
         </div>
