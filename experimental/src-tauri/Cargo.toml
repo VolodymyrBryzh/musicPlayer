@@ -1,0 +1,38 @@
+[package]
+name = "monochrome-player"
+version = "0.1.0"
+description = "A minimalist desktop music player"
+authors = ["VolodymyrBryzh"]
+edition = "2021"
+rust-version = "1.70"
+
+[build-dependencies]
+tauri-build = { version = "2.0", features = [] }
+
+[dependencies]
+tauri = { version = "2.0", features = [] }
+tauri-plugin-shell = "2.0"
+tauri-plugin-dialog = "2.0"
+tauri-plugin-fs = "2.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# ID3 tag parsing (lightweight)
+id3 = "1.14"
+
+# Base64 for cover art
+base64 = "0.22"
+
+# File operations
+walkdir = "2.5"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.dev]
+opt-level = 0
+
+[profile.release]
+opt-level = 3
+lto = true
