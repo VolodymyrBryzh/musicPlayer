@@ -23,7 +23,7 @@ const QueueList: React.FC<QueueListProps> = ({ playlist, currentTrackIndex, onTr
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
-            const files = Array.from(e.target.files).filter(file => file.type.startsWith('audio/'));
+            const files = (Array.from(e.target.files) as File[]).filter(file => file.type.startsWith('audio/'));
             onFilesSelected(files);
             // On mobile, close queue after selecting (optional, but good UX)
             if (isOpenMobile) onCloseMobile();
@@ -88,8 +88,7 @@ const QueueList: React.FC<QueueListProps> = ({ playlist, currentTrackIndex, onTr
                     type="file" 
                     ref={fileInputRef}
                     className="hidden" 
-                    webkitdirectory="" 
-                    directory="" 
+                    {...({ webkitdirectory: "", directory: "" } as any)}
                     multiple 
                     onChange={handleFileChange} 
                 />

@@ -58,7 +58,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
                 Now Playing
             </div>
 
-            <div className="aspect-square w-full max-w-[220px] mx-auto relative rounded overflow-hidden bg-[#090909] shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex items-center justify-center border border-[var(--border)]">
+            {/* Album Art Container - Added shrink-0 to prevent flex compression */}
+            <div className="aspect-square w-full max-w-[220px] mx-auto shrink-0 relative rounded overflow-hidden bg-[#090909] shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex items-center justify-center border border-[var(--border)]">
                 {metadata.coverUrl ? (
                     <img 
                         src={metadata.coverUrl} 

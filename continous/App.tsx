@@ -6,14 +6,6 @@ import QueueList from './components/QueueList';
 import { ThemeMode, SongMetadata, PlayerState } from './types';
 import { parseMetadata } from './utils/audioHelpers';
 
-// Extend HTMLInputElement to allow non-standard attributes like 'webkitdirectory' in TS if strict
-declare module 'react' {
-    interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
-        webkitdirectory?: string;
-        directory?: string;
-    }
-}
-
 const App: React.FC = () => {
     // State
     const [originalFiles, setOriginalFiles] = useState<File[]>([]);
@@ -203,7 +195,7 @@ const App: React.FC = () => {
         e.preventDefault();
         e.stopPropagation();
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('audio/'));
+            const files = (Array.from(e.dataTransfer.files) as File[]).filter(file => file.type.startsWith('audio/'));
             if (files.length > 0) handleFilesSelected(files);
         }
     };
