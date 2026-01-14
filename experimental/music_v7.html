@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monochrome Player</title>
+    <style>
+        :root {
+            /* Default Variables (Mono) */
+            --bg: #050505;
+            --surface-main: #141414;
+            --surface-side: #0e0e0e;
+            --primary: #ffffff;
+            --text: #e0e0e0;
+            --subtext: #555555;
+            --slider-bg: #2a2a2a;
+            --slider-fill: #ffffff;
+            --border: #1f1f1f;
+        }
+
+        body {
+            background-color: var(--bg);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            user-select: none;
+            transition: background 0.5s ease;
+            position: relative;
+        }
+
+        body.custom-bg {
+            background-image: var(--custom-bg);
+        }
+
+        #visualizer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none;
+        }
+
+        .wrapper {
+            display: flex; align-items: center; justify-content: center; position: relative; z-index: 10;
+        }
+
+        /* --- LEFT CARD (SETTINGS) - Glassmorphism --- */
+        .left-container {
+            background: rgba(14, 14, 14, 0.2);
+            backdrop-filter: blur(15px) saturate(160%);
+            -webkit-backdrop-filter: blur(15px) saturate(160%);
+            width: 220px;
+            height: 420px;
+            border-radius: 15px 0 0 15px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-right: none;
+            position: relative;
+            z-index: 5;
+            margin-right: -15px;
+            padding: 20px 30px 20px 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 
+                -5px 10px 30px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .left-container:hover {
+            background: rgba(14, 14, 14, 0.3);
+        }
+
+        .left-header {
+            font-size: 10px; color: var(--subtext); letter-spacing: 2px; text-transform: uppercase; font-weight: 700; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); text-align: right;
+        }
+
+        /* Background Picker */
+        .bg-picker {
+            display: none;
+            margin-top: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #333 transparent;
+        }
+        .bg-picker.show { display: block; }
+        .bg-picker::-webkit-scrollbar { width: 4px; }
+        .bg-picker::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+        
+        .bg-item {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            padding: 6px 0;
+            cursor: pointer;
+            font-size: 10px;
+            color: var(--subtext);
+            transition: color 0.2s;
+        }
+        .bg-item:hover { color: var(--text); }
+        .bg-item.active { color: var(--primary); font-weight: 600; }
+        
+        .bg-thumb {
+            width: 30px;
+            height: 20px;
+            border-radius: 3px;
+            background-size: cover;
+            background-position: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .setting-group { margin-bottom: 20px; text-align: right; }
+        .setting-label { font-size: 9px; color: var(--subtext); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        
+        .theme-btn {
+            display: block;
+            width: 100%;
+            text-align: right;
+            background: none;
+            border: none;
+            color: var(--subtext);
+            font-size: 11px;
+            padding: 5px 0;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .theme-btn:hover { color: var(--text); }
+        .theme-btn.active { color: var(--primary); font-weight: 700; position: relative; }
+        .theme-btn.active::after {
+            content: '•'; position: absolute; right: -12px; top: 5px; color: var(--primary);
+        }
+
+        /* --- MAIN PLAYER (CENTER) - Glassmorphism --- */
+        .player-container {
+            background: rgba(20, 20, 20, 0.25);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            width: 300px;
+            height: 480px;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+        }
+
+        .player-container:hover {
+            background: rgba(20, 20, 20, 0.35);
+            box-shadow: 
+                0 12px 40px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+
+        .player-header {
+            font-size: 11px; color: var(--subtext); letter-spacing: 3px; text-transform: uppercase; font-weight: 700; margin-bottom: 20px; text-align: left;
+        }
+
+        /* --- RIGHT CARD (QUEUE) - Glassmorphism --- */
+        .queue-container {
+            background: rgba(14, 14, 14, 0.2);
+            backdrop-filter: blur(15px) saturate(160%);
+            -webkit-backdrop-filter: blur(15px) saturate(160%);
+            width: 220px;
+            height: 420px;
+            border-radius: 0 15px 15px 0;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-left: none;
+            position: relative;
+            z-index: 5;
+            margin-left: -15px;
+            padding: 20px 20px 20px 30px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 
+                0 4px 24px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .queue-container:hover {
+            background: rgba(14, 14, 14, 0.3);
+        }
+
+        .queue-header {
+            font-size: 10px; color: var(--subtext); letter-spacing: 2px; text-transform: uppercase; font-weight: 700; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); display: flex; justify-content: space-between;
+        }
+
+        .queue-list {
+            flex-grow: 1; overflow-y: auto; margin-bottom: 15px; scrollbar-width: thin; scrollbar-color: #333 transparent;
+        }
+        .queue-list::-webkit-scrollbar { width: 4px; }
+        .queue-list::-webkit-scrollbar-track { background: transparent; }
+        .queue-list::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+        .queue-item {
+            display: flex; align-items: center; padding: 10px 0; font-size: 12px; color: #444; cursor: pointer; transition: color 0.2s; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+        .queue-item:hover { color: #888; }
+        .queue-item.active { color: var(--primary); font-weight: 600; }
+        .queue-item .idx { width: 25px; font-size: 10px; opacity: 0.5; }
+        .queue-item .title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 150px; }
+
+        /* Cover Art - Glassmorphism */
+        .cover-wrapper {
+            width: 220px; 
+            height: 220px; 
+            margin: 0 auto; 
+            position: relative; 
+            border-radius: 12px; 
+            overflow: hidden; 
+            background: rgba(9, 9, 9, 0.3);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .cover-wrapper:hover {
+            transform: scale(1.02);
+            box-shadow: 
+                0 12px 40px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+        #cover-img { width: 100%; height: 100%; object-fit: cover; display: none; }
+        .placeholder-icon { width: 30%; height: 30%; fill: #222; display: block; }
+
+        /* Song Info */
+        #song-title {
+            font-size: 15px; font-weight: 600; margin: 20px 0 5px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--primary); transition: color 0.5s ease;
+        }
+        #artist-name {
+            font-size: 12px; color: var(--subtext); margin-bottom: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        /* Controls */
+        .controls { display: flex; justify-content: space-between; align-items: center; padding: 0 15px; margin-bottom: 10px; }
+        button { background: none; border: none; color: var(--subtext); cursor: pointer; transition: color 0.2s, transform 0.1s; padding: 0; display: flex; align-items: center; justify-content: center; }
+        button:hover { color: var(--primary); }
+        button:active { transform: scale(0.95); }
+        button.main-btn { font-size: 40px; color: var(--text); }
+        button.nav-btn { font-size: 24px; }
+        button.sub-btn { width: 20px; height: 20px; }
+        button.sub-btn svg { width: 16px; height: 16px; fill: currentColor; }
+        button.active { color: var(--primary); }
+
+        /* Seekbar */
+        .progress-container { 
+            display: flex; align-items: center; gap: 15px; 
+            font-size: 10px; color: var(--subtext); 
+            font-variant-numeric: tabular-nums; margin-top: 10px; 
+        }
+        input[type="range"] {
+            -webkit-appearance: none; width: 100%; height: 3px; background: var(--slider-bg); border-radius: 2px; outline: none; cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 10px; height: 10px; background: var(--primary); border-radius: 50%; cursor: pointer; border: 1px solid #000; box-shadow: 0 0 5px rgba(0,0,0,0.5); transition: background-color 0.5s ease;
+        }
+
+        #file-input { display: none; }
+        .load-btn { 
+            width: 100%; 
+            font-size: 10px; 
+            color: var(--subtext); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            padding: 10px 0; 
+            border-radius: 8px; 
+            background: rgba(17, 17, 17, 0.3);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            text-transform: uppercase; 
+            letter-spacing: 1px; 
+            transition: all 0.3s ease; 
+            cursor: pointer; 
+        }
+        .load-btn:hover { 
+            border-color: rgba(255, 255, 255, 0.2); 
+            color: var(--primary); 
+            background: rgba(17, 17, 17, 0.5);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="visualizer"></canvas>
+
+    <div class="wrapper">
+        
+        <!-- LEFT CARD (SETTINGS) -->
+        <div class="left-container">
+            <div class="left-header">Settings</div>
+            
+            <div class="setting-group">
+                <div class="setting-label">Color Theme</div>
+                <button class="theme-btn active" id="btn-mono" onclick="setTheme('mono')">Monochrome</button>
+                <button class="theme-btn" id="btn-accent" onclick="setTheme('accent')">Cover Accent</button>
+                <button class="theme-btn" id="btn-adaptive" onclick="setTheme('adaptive')">Adaptive</button>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-label">Background</div>
+                <button class="theme-btn" id="btn-custom" onclick="toggleBgPicker()">Custom</button>
+                <div class="bg-picker" id="bg-picker">
+                    <!-- Backgrounds will be loaded dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN PLAYER (CENTER) -->
+        <div class="player-container" id="drop-zone">
+            <div class="player-header">Now Playing</div>
+            
+            <div class="cover-wrapper">
+                <svg id="cover-placeholder" class="placeholder-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"/></svg>
+                <img id="cover-img" src="" alt="Cover" crossorigin="anonymous">
+            </div>
+
+            <div>
+                <div id="song-title">Waiting...</div>
+                <div id="artist-name">Select folder to start</div>
+            </div>
+
+            <div>
+                <div class="controls">
+                    <button class="sub-btn" id="shuffle-btn" onclick="toggleShuffle()" title="Shuffle">
+                        <svg viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+                    </button>
+                    <button class="nav-btn" onclick="prevTrack()">&#9664;</button> 
+                    <button class="main-btn" id="play-btn" onclick="togglePlay()">&#9654;</button> 
+                    <button class="nav-btn" onclick="nextTrack()">&#9654;</button>
+                    <button class="sub-btn" id="repeat-btn" onclick="toggleRepeat()" title="Repeat">
+                        <svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v6zm-4-2V9h-1l-2 1v1h1.5v4H13z"/></svg>
+                    </button>
+                </div>
+                <div class="progress-container">
+                    <span id="curr-time">0:00</span>
+                    <input type="range" id="seek-slider" max="100" value="0">
+                    <span id="dur-time">0:00</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT CARD (QUEUE) -->
+        <div class="queue-container">
+            <div class="queue-header">
+                <span>Play Queue</span>
+                <span id="queue-count" style="opacity:0.5">0</span>
+            </div>
+            <div class="queue-list" id="queue-list"></div>
+            <input type="file" id="file-input" webkitdirectory directory multiple>
+            <button class="load-btn" onclick="document.getElementById('file-input').click()">Select Folder</button>
+        </div>
+    </div>
+
+    <script>
+        const audio = new Audio();
+        audio.crossOrigin = "anonymous";
+        
+        let originalFiles = []; 
+        let activePlaylist = []; 
+        let currentTrackIndex = 0;
+        let isShuffle = false;
+        let isRepeatOne = false;
+        let currentTheme = 'mono';
+        let currentBackground = 'none';
+        let extractedColor = { r: 255, g: 255, b: 255 };
+
+        // UI Refs
+        const titleEl = document.getElementById('song-title');
+        const artistEl = document.getElementById('artist-name');
+        const playBtn = document.getElementById('play-btn');
+        const slider = document.getElementById('seek-slider');
+        const currTimeEl = document.getElementById('curr-time');
+        const durTimeEl = document.getElementById('dur-time');
+        const fileInput = document.getElementById('file-input');
+        const dropZone = document.getElementById('drop-zone');
+        const shuffleBtn = document.getElementById('shuffle-btn');
+        const repeatBtn = document.getElementById('repeat-btn');
+        const coverImg = document.getElementById('cover-img');
+        const coverPlaceholder = document.getElementById('cover-placeholder');
+        const queueList = document.getElementById('queue-list');
+        const queueCount = document.getElementById('queue-count');
+        const btns = document.querySelectorAll('.theme-btn');
+
+        // Visualizer
+        const canvas = document.getElementById('visualizer');
+        const ctx = canvas.getContext('2d');
+        let audioContext, analyser, source, isVisualizerInit = false;
+
+        function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function initVisualizer() {
+            if (isVisualizerInit) return;
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                source = audioContext.createMediaElementSource(audio);
+                source.connect(analyser);
+                analyser.connect(audioContext.destination);
+                analyser.fftSize = 256;
+                isVisualizerInit = true;
+                animateVisualizer();
+            } catch (e) {}
+        }
+        function animateVisualizer() {
+            if (!isVisualizerInit) return;
+            requestAnimationFrame(animateVisualizer);
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteFrequencyData(dataArray);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const centerY = canvas.height / 2;
+            const barWidth = (canvas.width / bufferLength) * 2.5;
+            let x = 0;
+            const r = (currentTheme === 'mono') ? 255 : extractedColor.r;
+            const g = (currentTheme === 'mono') ? 255 : extractedColor.g;
+            const b = (currentTheme === 'mono') ? 255 : extractedColor.b;
+            for (let i = 0; i < bufferLength; i++) {
+                const barHeight = dataArray[i] * 1.5;
+                const alpha = (dataArray[i] / 255) * 0.2; 
+                ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+                ctx.fillRect(canvas.width/2 + x, centerY - barHeight/2, barWidth - 1, barHeight);
+                ctx.fillRect(canvas.width/2 - x, centerY - barHeight/2, barWidth - 1, barHeight);
+                x += barWidth;
+            }
+        }
+
+        function setTheme(mode) {
+            currentTheme = mode;
+            btns.forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-${mode}`).classList.add('active');
+            applyColors();
+        }
+
+        // Background functions
+        const backgroundFiles = [
+            'backgrounds/148.png',
+            'backgrounds/background.png'
+        ];
+
+        function getBackgroundName(filePath) {
+            // Отримуємо назву файлу з шляху (без папки та розширення)
+            const fileName = filePath.split('/').pop().split('\\').pop();
+            return fileName.replace(/\.[^/.]+$/, ''); // Прибираємо розширення
+        }
+
+        function loadBackgrounds() {
+            const picker = document.getElementById('bg-picker');
+            
+            // Додаємо опцію "None"
+            const noneItem = document.createElement('div');
+            noneItem.className = 'bg-item active';
+            noneItem.dataset.bg = 'none';
+            noneItem.onclick = () => setBackground('none');
+            noneItem.innerHTML = '<span>None</span>';
+            picker.appendChild(noneItem);
+            
+            // Додаємо всі бекграунди з папки
+            backgroundFiles.forEach(filePath => {
+                const item = document.createElement('div');
+                item.className = 'bg-item';
+                item.dataset.bg = filePath;
+                item.onclick = () => setBackground(filePath);
+                
+                const name = getBackgroundName(filePath);
+                item.innerHTML = `
+                    <span>${name}</span>
+                    <div class="bg-thumb" style="background-image: url('${filePath}')"></div>
+                `;
+                picker.appendChild(item);
+            });
+        }
+
+        function toggleBgPicker() {
+            const picker = document.getElementById('bg-picker');
+            const btn = document.getElementById('btn-custom');
+            picker.classList.toggle('show');
+            btn.classList.toggle('active', picker.classList.contains('show') || currentBackground !== 'none');
+        }
+
+        function setBackground(bg) {
+            currentBackground = bg;
+            const root = document.documentElement.style;
+            
+            // Update active state
+            document.querySelectorAll('.bg-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.bg === bg);
+            });
+            
+            // Update custom button state
+            const customBtn = document.getElementById('btn-custom');
+            customBtn.classList.toggle('active', bg !== 'none');
+            
+            if (bg === 'none') {
+                document.body.classList.remove('custom-bg');
+                root.removeProperty('--custom-bg');
+            } else {
+                root.setProperty('--custom-bg', `url('${bg}')`);
+                document.body.classList.add('custom-bg');
+            }
+        }
+
+        // Завантажити бекграунди при завантаженні сторінки
+        window.addEventListener('DOMContentLoaded', loadBackgrounds);
+
+        function extractColorFromCover() {
+            if (!coverImg.src || coverImg.style.display === 'none') {
+                extractedColor = { r: 255, g: 255, b: 255 };
+                return;
+            }
+            const cvs = document.createElement('canvas');
+            cvs.width = coverImg.naturalWidth;
+            cvs.height = coverImg.naturalHeight;
+            const c = cvs.getContext('2d');
+            c.drawImage(coverImg, 0, 0);
+            try {
+                const data = c.getImageData(cvs.width/4, cvs.height/4, cvs.width/2, cvs.height/2).data;
+                let r=0, g=0, b=0, count=0;
+                for (let i = 0; i < data.length; i += 40) {
+                    r += data[i]; g += data[i+1]; b += data[i+2]; count++;
+                }
+                extractedColor = { r: Math.floor(r/count), g: Math.floor(g/count), b: Math.floor(b/count) };
+            } catch(e) { extractedColor = { r: 255, g: 255, b: 255 }; }
+            applyColors();
+        }
+
+        function applyColors() {
+            const root = document.documentElement.style;
+            const { r, g, b } = extractedColor;
+            
+            // Якщо є custom background, не змінюємо --bg
+            if (currentBackground !== 'none') {
+                // З custom background використовуємо лише кольори акцентів
+                if (currentTheme === 'mono') {
+                    root.setProperty('--primary', '#ffffff');
+                    root.setProperty('--text', '#e0e0e0');
+                    root.setProperty('--slider-fill', '#ffffff');
+                    coverImg.style.filter = "grayscale(100%)";
+                } else if (currentTheme === 'accent') {
+                    root.setProperty('--primary', `rgb(${r},${g},${b})`);
+                    root.setProperty('--text', '#e0e0e0');
+                    root.setProperty('--slider-fill', `rgb(${r},${g},${b})`);
+                    coverImg.style.filter = "none";
+                } else if (currentTheme === 'adaptive') {
+                    root.setProperty('--primary', `rgb(${Math.min(r+50,255)},${Math.min(g+50,255)},${Math.min(b+50,255)})`);
+                    root.setProperty('--text', '#ffffff');
+                    root.setProperty('--slider-fill', `rgb(${r},${g},${b})`);
+                    coverImg.style.filter = "none";
+                }
+            } else {
+                // Без custom background - повний контроль кольорів
+                if (currentTheme === 'mono') {
+                    root.setProperty('--bg', '#050505');
+                    root.setProperty('--primary', '#ffffff');
+                    root.setProperty('--text', '#e0e0e0');
+                    root.setProperty('--slider-fill', '#ffffff');
+                    coverImg.style.filter = "grayscale(100%)";
+                } else if (currentTheme === 'accent') {
+                    root.setProperty('--bg', '#050505');
+                    root.setProperty('--primary', `rgb(${r},${g},${b})`);
+                    root.setProperty('--text', '#e0e0e0');
+                    root.setProperty('--slider-fill', `rgb(${r},${g},${b})`);
+                    coverImg.style.filter = "none";
+                } else if (currentTheme === 'adaptive') {
+                    root.setProperty('--bg', `rgb(${Math.floor(r*0.1)},${Math.floor(g*0.1)},${Math.floor(b*0.1)})`);
+                    root.setProperty('--primary', `rgb(${Math.min(r+50,255)},${Math.min(g+50,255)},${Math.min(b+50,255)})`);
+                    root.setProperty('--text', '#ffffff');
+                    root.setProperty('--slider-fill', `rgb(${r},${g},${b})`);
+                    coverImg.style.filter = "none";
+                }
+            }
+            updateSliderGradient();
+        }
+
+        // Logic
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files).filter(file => file.type.startsWith('audio/'));
+            if (files.length > 0) loadFiles(files);
+        });
+
+        function loadFiles(files) {
+            originalFiles = files.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'}));
+            activePlaylist = isShuffle ? [...originalFiles].sort(() => Math.random() - 0.5) : [...originalFiles];
+            queueCount.textContent = activePlaylist.length;
+            currentTrackIndex = Math.floor(Math.random() * activePlaylist.length);
+            renderQueue();
+            loadTrack(currentTrackIndex);
+        }
+
+        function toggleShuffle() {
+            isShuffle = !isShuffle;
+            shuffleBtn.classList.toggle('active', isShuffle);
+            if (activePlaylist.length === 0) return;
+            const currentFile = activePlaylist[currentTrackIndex];
+            if (isShuffle) {
+                let others = originalFiles.filter(f => f !== currentFile);
+                others.sort(() => Math.random() - 0.5);
+                activePlaylist = [currentFile, ...others];
+                currentTrackIndex = 0;
+            } else {
+                activePlaylist = [...originalFiles];
+                currentTrackIndex = activePlaylist.indexOf(currentFile);
+            }
+            renderQueue();
+            scrollToCurrent();
+        }
+
+        function renderQueue() {
+            queueList.innerHTML = '';
+            activePlaylist.forEach((file, index) => {
+                const item = document.createElement('div');
+                item.className = 'queue-item';
+                if(index === currentTrackIndex) item.classList.add('active');
+                item.onclick = () => { currentTrackIndex = index; loadTrack(index); };
+                const name = file.name.replace(/\.[^/.]+$/, "");
+                item.innerHTML = `<span class="idx">${index + 1}</span><span class="title" title="${name}">${name}</span>`;
+                queueList.appendChild(item);
+            });
+            scrollToCurrent();
+        }
+        function scrollToCurrent() {
+            const activeItem = queueList.children[currentTrackIndex];
+            if(activeItem) activeItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        function updateQueueHighlight() {
+            Array.from(queueList.children).forEach((child, i) => {
+                if(i === currentTrackIndex) child.classList.add('active');
+                else child.classList.remove('active');
+            });
+            scrollToCurrent();
+        }
+
+        async function loadTrack(index) {
+            if (activePlaylist.length === 0) return;
+            const file = activePlaylist[index];
+            titleEl.innerText = file.name.replace(/\.[^/.]+$/, ""); 
+            artistEl.innerText = "Unknown Artist"; 
+            if (audio.src) URL.revokeObjectURL(audio.src);
+            audio.src = URL.createObjectURL(file);
+            audio.load();
+            
+            slider.value = 0;
+            updateSliderGradient();
+            
+            // Start playing IMMEDIATELY to prevent gap
+            togglePlay(true);
+            
+            updateQueueHighlight();
+            await parseMetadata(file);
+        }
+
+        function togglePlay(forcePlay = false) {
+            if (activePlaylist.length === 0) return;
+            if (!isVisualizerInit && !forcePlay) initVisualizer();
+            if (audioContext && audioContext.state === 'suspended') audioContext.resume();
+            if (forcePlay || audio.paused) {
+                if (!isVisualizerInit) initVisualizer();
+                audio.play().catch(e => console.log("Auto-play blocked:", e));
+                playBtn.innerHTML = "&#10074;&#10074;"; 
+            } else { audio.pause(); playBtn.innerHTML = "&#9654;"; }
+        }
+
+        function nextTrack() {
+            if (activePlaylist.length === 0) return;
+            currentTrackIndex = (currentTrackIndex + 1) % activePlaylist.length;
+            loadTrack(currentTrackIndex);
+        }
+        function prevTrack() {
+            if (activePlaylist.length === 0) return;
+            currentTrackIndex = (currentTrackIndex - 1 + activePlaylist.length) % activePlaylist.length;
+            loadTrack(currentTrackIndex);
+        }
+        function toggleRepeat() {
+            isRepeatOne = !isRepeatOne;
+            repeatBtn.classList.toggle('active', isRepeatOne);
+            repeatBtn.innerHTML = isRepeatOne ? '<svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v6zm-4-2V9h-1l-2 1v1h1.5v4H13z"/></svg>' : '<svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v6z"/></svg>';
+        }
+
+        function updateSliderGradient() {
+            const val = slider.value;
+            slider.style.background = `linear-gradient(to right, var(--slider-fill) 0%, var(--slider-fill) ${val}%, var(--slider-bg) ${val}%, var(--slider-bg) 100%)`;
+        }
+
+        async function parseMetadata(file) {
+            coverImg.style.display = 'none'; coverPlaceholder.style.display = 'block';
+            if (coverImg.src && coverImg.src.startsWith('blob:')) URL.revokeObjectURL(coverImg.src);
+            coverImg.src = "";
+            if (file.type !== "audio/mpeg" && !file.name.toLowerCase().endsWith(".mp3")) return;
+            try {
+                const buffer = await file.slice(0, 512 * 1024).arrayBuffer();
+                const view = new DataView(buffer);
+                if (view.getUint8(0) !== 0x49 || view.getUint8(1) !== 0x44 || view.getUint8(2) !== 0x33) return;
+                const version = view.getUint8(3);
+                let offset = 10;
+                let id3Size = ((view.getUint8(6) & 0x7f) << 21) | ((view.getUint8(7) & 0x7f) << 14) | ((view.getUint8(8) & 0x7f) << 7) | (view.getUint8(9) & 0x7f);
+                const searchLimit = Math.min(buffer.byteLength, id3Size + 10);
+                let foundTitle = false, foundArtist = false, foundCover = false;
+                while (offset < searchLimit) {
+                    if (foundTitle && foundArtist && foundCover) break;
+                    let frameId = "", frameSize = 0;
+                    if (version === 3 || version === 4) {
+                        frameId = String.fromCharCode(view.getUint8(offset), view.getUint8(offset+1), view.getUint8(offset+2), view.getUint8(offset+3));
+                        if(version === 4) frameSize = ((view.getUint8(offset+4) & 0x7f) << 21) | ((view.getUint8(offset+5) & 0x7f) << 14) | ((view.getUint8(offset+6) & 0x7f) << 7) | (view.getUint8(offset+7) & 0x7f);
+                        else frameSize = view.getUint32(offset + 4);
+                        offset += 10; 
+                    } else if (version === 2) {
+                        frameId = String.fromCharCode(view.getUint8(offset), view.getUint8(offset+1), view.getUint8(offset+2));
+                        frameSize = (view.getUint8(offset+3) << 16) | (view.getUint8(offset+4) << 8) | view.getUint8(offset+5); 
+                        offset += 6;
+                    } else { break; }
+                    if (frameSize === 0) break;
+                    if (frameId === "TIT2" || frameId === "TT2" || frameId === "TPE1" || frameId === "TP1") {
+                        const encoding = view.getUint8(offset);
+                        let decoder;
+                        if(encoding === 0) decoder = new TextDecoder('iso-8859-1');
+                        else if(encoding === 1) decoder = new TextDecoder('utf-16');
+                        else if(encoding === 2) decoder = new TextDecoder('utf-16be');
+                        else if(encoding === 3) decoder = new TextDecoder('utf-8');
+                        if (decoder) {
+                            const textBytes = new Uint8Array(buffer, offset + 1, frameSize - 1);
+                            let text = decoder.decode(textBytes);
+                            text = text.replace(/\0+$/, '').replace(/\0/g, ', ').trim();
+                            if (frameId.startsWith("TIT") || frameId.startsWith("TT")) { titleEl.innerText = text; foundTitle = true; }
+                            else { artistEl.innerText = text; foundArtist = true; }
+                        }
+                    }
+                    if (!foundCover && (frameId === "APIC" || frameId === "PIC")) {
+                        let cursor = offset + 1;
+                        if (version === 2) cursor += 4; else { while (view.getUint8(cursor) !== 0 && cursor < searchLimit) cursor++; cursor += 2; }
+                        let dataStart = cursor, foundImage = false, mime = "image/jpeg";
+                        for(let i=0; i < 200; i++) {
+                            if (view.getUint8(dataStart + i) === 0xFF && view.getUint8(dataStart + i + 1) === 0xD8) { dataStart += i; foundImage = true; break; }
+                            if (view.getUint8(dataStart + i) === 0x89 && view.getUint8(dataStart + i + 1) === 0x50) { dataStart += i; foundImage = true; mime = "image/png"; break; }
+                        }
+                        if (foundImage) {
+                            const imgSize = frameSize - (dataStart - offset);
+                            if (imgSize > 0) {
+                                const imgData = new Uint8Array(buffer, dataStart, imgSize);
+                                const blob = new Blob([imgData], {type: mime});
+                                coverImg.src = URL.createObjectURL(blob);
+                                coverImg.style.display = "block";
+                                coverPlaceholder.style.display = "none";
+                                foundCover = true;
+                                coverImg.onload = () => { extractColorFromCover(); };
+                            }
+                        }
+                    }
+                    offset += frameSize;
+                }
+            } catch (e) {}
+            if(!foundCover) {
+                extractedColor = { r: 255, g: 255, b: 255 };
+                applyColors();
+            }
+        }
+
+        audio.addEventListener('timeupdate', () => {
+            const { currentTime, duration } = audio;
+            if (isNaN(duration)) return;
+            const progress = (currentTime / duration) * 100;
+            slider.value = progress;
+            updateSliderGradient(); 
+            currTimeEl.textContent = formatTime(currentTime);
+            durTimeEl.textContent = formatTime(duration);
+        });
+        slider.addEventListener('input', () => { 
+            const time = (slider.value / 100) * audio.duration;
+            audio.currentTime = time;
+            updateSliderGradient(); 
+        });
+        audio.addEventListener('ended', () => { isRepeatOne ? (audio.currentTime = 0, audio.play()) : nextTrack(); });
+        function formatTime(time) {
+            const m = Math.floor(time / 60); const s = Math.floor(time % 60);
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
+        });
+        dropZone.addEventListener('drop', (e) => {
+            const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('audio/'));
+            if(files.length > 0) loadFiles(files);
+        });
+    </script>
+</body>
+</html>
