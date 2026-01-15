@@ -4,7 +4,7 @@ import SettingsPanel from './components/SettingsPanel';
 import PlayerControls from './components/PlayerControls';
 import QueueList from './components/QueueList';
 import { ThemeMode, SongMetadata, PlayerState } from './types';
-import { parseMetadata } from './utils/audioHelpers';
+import { parseMetadata, getAudioFilesFromDataTransfer } from './utils/audioHelpers';
 
 const App: React.FC = () => {
     // State
@@ -223,26 +223,12 @@ const App: React.FC = () => {
         e.dataTransfer.dropEffect = 'copy';
     };
 
-    const handleDrop = (e: React.DragEvent) => {
+    const handleDrop = async (e: React.DragEvent) => {
         e.preventDefault();
         e.stopPropagation();
         
-        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            const files = Array.from(e.dataTransfer.files).filter(file => 
-                file.type.startsWith('audio/') || 
-                /\.(mp3|wav|ogg|m4a|flac)$/i.test(file.name)
-            );
-            if (files.length > 0) handleFilesSelected(files);
-        }
-    };
-
-    const handleDropOnRoot = (e: React.DragEvent) => {
-        handleDrop(e);
-    };
-
-    const handleDropOnDrop = (e: React.DragEvent) => {
-        // This is strictly for the drop event on the main container
-        handleDrop(e);
+        const files = await getAudioFilesFromDataTransfer(e.dataTransfer);
+        if (files.length > 0) handleFilesSelected(files);
     };
 
     // Construct Dynamic CSS Variables based on Theme

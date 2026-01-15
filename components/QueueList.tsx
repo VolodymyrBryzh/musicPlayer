@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { X } from 'lucide-react';
+import { getAudioFilesFromDataTransfer } from '../utils/audioHelpers';
 
 interface QueueListProps {
     playlist: File[];
@@ -36,19 +37,14 @@ const QueueList: React.FC<QueueListProps> = ({ playlist, currentTrackIndex, onTr
         e.dataTransfer.dropEffect = 'copy';
     };
 
-    const handleDrop = (e: React.DragEvent) => {
+    const handleDrop = async (e: React.DragEvent) => {
         e.preventDefault();
         e.stopPropagation();
         
-        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            const files = Array.from(e.dataTransfer.files).filter(file => 
-                file.type.startsWith('audio/') || 
-                /\.(mp3|wav|ogg|m4a|flac)$/i.test(file.name)
-            );
-            if (files.length > 0) {
-                onFilesSelected(files);
-                if (isOpenMobile) onCloseMobile();
-            }
+        const files = await getAudioFilesFromDataTransfer(e.dataTransfer);
+        if (files.length > 0) {
+            onFilesSelected(files);
+            if (isOpenMobile) onCloseMobile();
         }
     };
 

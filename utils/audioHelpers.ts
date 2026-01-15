@@ -45,6 +45,60 @@ export const extractColorFromImage = (imgSrc: string): Promise<{ r: number; g: n
     });
 };
 
+export const getAudioFilesFromDataTransfer = async (dataTransfer: DataTransfer): Promise<File[]> => {
+    const files: File[] = [];
+
+    const traverse = async (entry: any) => {
+        if (entry.isFile) {
+            try {
+                const file = await new Promise<File>((resolve, reject) => entry.file(resolve, reject));
+                if (file.type.startsWith('audio/') || /\.(mp3|wav|ogg|m4a|flac)$/i.test(file.name)) {
+                    files.push(file);
+                }
+            } catch (e) {
+                console.warn("File read error", e);
+            }
+        } else if (entry.isDirectory) {
+            const reader = entry.createReader();
+            const readBatch = () => new Promise<any[]>((resolve, reject) => reader.readEntries(resolve, reject));
+            try {
+                let entries = await readBatch();
+                while (entries.length > 0) {
+                    await Promise.all(entries.map(traverse));
+                    entries = await readBatch();
+                }
+            } catch (e) {
+                console.warn("Dir read error", e);
+            }
+        }
+    };
+
+    if (dataTransfer.items && dataTransfer.items.length > 0) {
+        const promises = [];
+        for (let i = 0; i < dataTransfer.items.length; i++) {
+            const item = dataTransfer.items[i];
+            if (item.kind === 'file') {
+                const entry = (item as any).webkitGetAsEntry?.();
+                if (entry) {
+                    promises.push(traverse(entry));
+                }
+            }
+        }
+        await Promise.all(promises);
+    }
+    
+    // Fallback: if we didn't find anything via items (or items API not supported), try standard files list
+    if (files.length === 0 && dataTransfer.files.length > 0) {
+        Array.from(dataTransfer.files).forEach(file => {
+             if (file.type.startsWith('audio/') || /\.(mp3|wav|ogg|m4a|flac)$/i.test(file.name)) {
+                 files.push(file);
+             }
+        });
+    }
+
+    return files;
+};
+
 export const parseMetadata = async (file: File): Promise<SongMetadata> => {
     const defaultMeta: SongMetadata = {
         title: file.name.replace(/\.[^/.]+$/, ""),
