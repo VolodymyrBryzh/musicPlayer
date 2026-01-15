@@ -172,19 +172,17 @@ fn get_backgrounds() -> Result<Vec<BackgroundImage>, String> {
     Ok(backgrounds)
 }
 
-/// Scan all folders and subfolders in parent directory where the app folder is located
+/// Scan all folders and subfolders where the exe is located
 #[tauri::command]
 fn scan_local(_app_handle: tauri::AppHandle) -> Result<Vec<Track>, String> {
     let audio_extensions = ["mp3", "flac", "wav", "ogg", "m4a", "aac", "wma"];
     let mut tracks: Vec<Track> = Vec::new();
     let mut id = 0;
 
-    // Get app executable path, then go to parent of app folder
-    // e.g. if exe is in C:\Downloads\musicPlayer\app.exe
-    // scan C:\Downloads\ (parent of musicPlayer folder)
+    // Get app executable path - scan the folder where exe is located
+    // e.g. if exe is in C:\Music\Player\app.exe, scan C:\Music\Player\
     let exe_path = std::env::current_exe().map_err(|e| e.to_string())?;
-    let app_dir = exe_path.parent().ok_or("Cannot get app directory")?;
-    let scan_dir = app_dir.parent().unwrap_or(app_dir);
+    let scan_dir = exe_path.parent().ok_or("Cannot get app directory")?;
 
     for entry in WalkDir::new(scan_dir)
         .into_iter()

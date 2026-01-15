@@ -91,7 +91,7 @@ const QueueList: React.FC<QueueListProps> = ({ playlist, currentTrackIndex, onTr
                             onScanLocal();
                             if (isOpenMobile) onCloseMobile();
                         }}
-                        className="w-full text-[10px] text-[var(--primary)] border border-[var(--primary)]/30 py-3 md:py-2.5 rounded bg-[var(--primary)]/5 uppercase tracking-wider transition-all duration-200 hover:border-[var(--primary)]/50 hover:bg-[var(--primary)]/10 cursor-pointer"
+                        className="w-full text-[10px] text-[var(--subtext)] border border-[var(--border)] py-3 md:py-2.5 rounded bg-transparent uppercase tracking-wider transition-all duration-200 hover:border-[#444] hover:text-[var(--primary)] hover:bg-white/5 cursor-pointer"
                     >
                         Scan All
                     </button>
