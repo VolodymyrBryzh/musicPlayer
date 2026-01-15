@@ -77,11 +77,11 @@ React + TypeScript
 | Shuffle / Repeat | ✓ | ✓ |
 | Queue Management | ✓ | ✓ |
 | Mobile Responsive | ✓ | ✓ |
+| F11 Fullscreen | ✓ | ✓ |
+| Drag & Drop | ✓ | ✓ |
+| File Picker | ✓ | ✓ |
 | Custom Backgrounds | ✓ | - |
-| F11 Fullscreen | ✓ | - |
 | Scan All Folders | ✓ | - |
-| Native File Picker | ✓ | - |
-| Drag & Drop | - | ✓ |
 | Works Offline | ✓ | - |
 
 <br>
