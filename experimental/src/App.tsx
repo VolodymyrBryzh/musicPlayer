@@ -37,6 +37,10 @@ const App: React.FC = () => {
     const analyserRef = useRef<AnalyserNode | null>(null);
     const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
     const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
+    
+    // Refs for stable event listeners (fix from web branch)
+    const playNextRef = useRef<() => void>(() => {});
+    const isRepeatOneRef = useRef(playerState.isRepeatOne);
 
     // Load backgrounds on mount
     useEffect(() => {
@@ -105,19 +109,20 @@ const App: React.FC = () => {
         updateBgUrl();
     }, [currentBackground]);
 
-    // Initial Audio Setup
+    // Initial Audio Setup with stable event listeners (fix from web branch)
     useEffect(() => {
         const audio = audioRef.current;
         audio.crossOrigin = "anonymous";
         
         const updateTime = () => setPlayerState(prev => ({ ...prev, currentTime: audio.currentTime }));
         const updateDuration = () => setPlayerState(prev => ({ ...prev, duration: audio.duration }));
+        
         const handleEnded = () => {
-            if (playerState.isRepeatOne) {
+            if (isRepeatOneRef.current) {
                 audio.currentTime = 0;
                 audio.play();
             } else {
-                playNext();
+                playNextRef.current();
             }
         };
 
@@ -130,7 +135,7 @@ const App: React.FC = () => {
             audio.removeEventListener('loadedmetadata', updateDuration);
             audio.removeEventListener('ended', handleEnded);
         };
-    }, [playerState.isRepeatOne, activePlaylist]); // Re-bind if playlist changes to ensure closures capture new state
+    }, []); // Run once, rely on refs for dynamic logic
 
     // Initialize AudioContext on user interaction
     const initAudioContext = () => {
@@ -209,13 +214,19 @@ const App: React.FC = () => {
             setOriginalTracks(sorted);
             
             let newPlaylist = [...sorted];
+            let startIndex = 0;
+
+            // If shuffle is ON, randomize playlist
+            // If shuffle is OFF, keep A-Z but start at a random song
             if (playerState.isShuffle) {
                 newPlaylist = newPlaylist.sort(() => Math.random() - 0.5);
+            } else if (newPlaylist.length > 0) {
+                startIndex = Math.floor(Math.random() * newPlaylist.length);
             }
             
             setActivePlaylist(newPlaylist);
-            setCurrentTrackIndex(0);
-            loadTrack(0, newPlaylist);
+            setCurrentTrackIndex(startIndex);
+            loadTrack(startIndex, newPlaylist);
         } catch (e) {
             console.error("Failed to scan directory", e);
         }
@@ -237,13 +248,17 @@ const App: React.FC = () => {
             setOriginalTracks(sorted);
             
             let newPlaylist = [...sorted];
+            let startIndex = 0;
+
             if (playerState.isShuffle) {
                 newPlaylist = newPlaylist.sort(() => Math.random() - 0.5);
+            } else if (newPlaylist.length > 0) {
+                startIndex = Math.floor(Math.random() * newPlaylist.length);
             }
             
             setActivePlaylist(newPlaylist);
-            setCurrentTrackIndex(0);
-            loadTrack(0, newPlaylist);
+            setCurrentTrackIndex(startIndex);
+            loadTrack(startIndex, newPlaylist);
         } catch (e) {
             console.error("Failed to scan local", e);
         }
@@ -262,6 +277,10 @@ const App: React.FC = () => {
         setCurrentTrackIndex(prevIndex);
         loadTrack(prevIndex);
     };
+
+    // Update refs with current values
+    playNextRef.current = playNext;
+    isRepeatOneRef.current = playerState.isRepeatOne;
 
     const togglePlay = () => {
         if (activePlaylist.length === 0) return;
