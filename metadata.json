@@ -1,5 +1,5 @@
 {
   "name": "Monochrome Player",
-  "description": "A sleek, monochromatic local music player with real-time visualization, queue management, and adaptive theming based on album art.",
+  "description": "A sleek, monochromatic local music player",
   "requestFramePermissions": []
 }

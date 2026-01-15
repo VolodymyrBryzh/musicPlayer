@@ -87,13 +87,13 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     </button>
 
                     {/* Dynamic Background Section */}
-                    <div className="text-[9px] text-[var(--subtext)] uppercase tracking-[1px] mt-6 mb-4 md:mb-2">Background</div>
+                    <div className="text-[9px] text-[var(--subtext)] uppercase tracking-[1px] mt-6 mb-4 md:mb-2">Effects</div>
                     
                     <button 
                         onClick={() => onToggleBgMode(BackgroundMode.NONE)}
                         className={`block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${isStatic ? 'text-[var(--primary)] font-bold relative' : 'text-[var(--subtext)]'}`}
                     >
-                        Static (Reset)
+                        None
                          {isStatic && <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
                     </button>
 
