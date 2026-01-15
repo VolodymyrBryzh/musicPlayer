@@ -66,3 +66,22 @@ export async function convertFileSrc(path: string): Promise<string> {
 export function coverArtToDataUrl(coverArt: CoverArt): string {
     return `data:${coverArt.mime_type};base64,${coverArt.data}`;
 }
+
+// Listen for file drop events
+export async function onFileDrop(callback: (paths: string[]) => void): Promise<() => void> {
+    if (isTauri()) {
+        const { listen } = await import('@tauri-apps/api/event');
+        const unlisten = await listen<{ paths: string[] }>('tauri://drag-drop', (event) => {
+            if (event.payload.paths && event.payload.paths.length > 0) {
+                callback(event.payload.paths);
+            }
+        });
+        return unlisten;
+    }
+    return () => {};
+}
+
+// Scan specific files for audio
+export async function scanFiles(paths: string[]): Promise<Track[]> {
+    return invoke<Track[]>('scan_files', { paths });
+}

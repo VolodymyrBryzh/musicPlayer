@@ -4,7 +4,7 @@ import SettingsPanel from './components/SettingsPanel';
 import PlayerControls from './components/PlayerControls';
 import QueueList from './components/QueueList';
 import { ThemeMode, SongMetadata, PlayerState, Track, BackgroundImage } from './types';
-import { scanDirectory, scanLocal, getCoverArt, convertFileSrc, coverArtToDataUrl, getBackgrounds } from './utils/tauri';
+import { scanDirectory, scanLocal, scanFiles, getCoverArt, convertFileSrc, coverArtToDataUrl, getBackgrounds, onFileDrop } from './utils/tauri';
 import { extractDominantColor } from './utils/audioHelpers';
 
 const App: React.FC = () => {
@@ -54,6 +54,51 @@ const App: React.FC = () => {
         };
         loadBackgrounds();
     }, []);
+
+    // Drag & Drop support
+    useEffect(() => {
+        let unlisten: (() => void) | null = null;
+        
+        const setupDragDrop = async () => {
+            unlisten = await onFileDrop(async (paths) => {
+                try {
+                    const tracks = await scanFiles(paths);
+                    if (tracks.length === 0) {
+                        setMetadata({
+                            title: 'No audio files',
+                            artist: 'Drop MP3 files or folders',
+                            coverUrl: null,
+                            color: null
+                        });
+                        return;
+                    }
+                    const sorted = tracks.sort((a, b) => a.filename.localeCompare(b.filename, undefined, { numeric: true, sensitivity: 'base' }));
+                    setOriginalTracks(sorted);
+                    
+                    let newPlaylist = [...sorted];
+                    let startIndex = 0;
+
+                    if (playerState.isShuffle) {
+                        newPlaylist = newPlaylist.sort(() => Math.random() - 0.5);
+                    } else if (newPlaylist.length > 0) {
+                        startIndex = Math.floor(Math.random() * newPlaylist.length);
+                    }
+                    
+                    setActivePlaylist(newPlaylist);
+                    setCurrentTrackIndex(startIndex);
+                    loadTrack(startIndex, newPlaylist);
+                } catch (e) {
+                    console.error("Failed to scan dropped files", e);
+                }
+            });
+        };
+        
+        setupDragDrop();
+        
+        return () => {
+            if (unlisten) unlisten();
+        };
+    }, [playerState.isShuffle]);
 
     // Fullscreen toggle using Rust command
     const toggleFullscreen = async () => {

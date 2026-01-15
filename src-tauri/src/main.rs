@@ -239,6 +239,82 @@ async fn toggle_fullscreen(window: tauri::Window) -> Result<bool, String> {
     Ok(!is_fullscreen)
 }
 
+/// Scan specific files (for drag & drop)
+#[tauri::command]
+fn scan_files(paths: Vec<String>) -> Result<Vec<Track>, String> {
+    let audio_extensions = ["mp3", "flac", "wav", "ogg", "m4a", "aac", "wma"];
+    let mut tracks: Vec<Track> = Vec::new();
+    let mut id = 0;
+
+    for path_str in paths {
+        let file_path = PathBuf::from(&path_str);
+        
+        // If it's a directory, scan it recursively
+        if file_path.is_dir() {
+            for entry in WalkDir::new(&file_path)
+                .into_iter()
+                .filter_map(|e| e.ok())
+                .filter(|e| e.file_type().is_file())
+            {
+                let entry_path = entry.path();
+                if let Some(ext) = entry_path.extension() {
+                    let ext_str = ext.to_string_lossy().to_lowercase();
+                    if audio_extensions.contains(&ext_str.as_str()) {
+                        let filename = entry_path
+                            .file_name()
+                            .map(|n| n.to_string_lossy().to_string())
+                            .unwrap_or_default();
+
+                        let (title, artist, album) = parse_metadata(entry_path);
+
+                        tracks.push(Track {
+                            id,
+                            path: entry_path.to_string_lossy().to_string(),
+                            filename: filename.clone(),
+                            title: title.or(Some(filename.replace(&format!(".{}", ext_str), ""))),
+                            artist,
+                            album,
+                        });
+                        id += 1;
+                    }
+                }
+            }
+        } else if file_path.is_file() {
+            // Single file
+            if let Some(ext) = file_path.extension() {
+                let ext_str = ext.to_string_lossy().to_lowercase();
+                if audio_extensions.contains(&ext_str.as_str()) {
+                    let filename = file_path
+                        .file_name()
+                        .map(|n| n.to_string_lossy().to_string())
+                        .unwrap_or_default();
+
+                    let (title, artist, album) = parse_metadata(&file_path);
+
+                    tracks.push(Track {
+                        id,
+                        path: file_path.to_string_lossy().to_string(),
+                        filename: filename.clone(),
+                        title: title.or(Some(filename.replace(&format!(".{}", ext_str), ""))),
+                        artist,
+                        album,
+                    });
+                    id += 1;
+                }
+            }
+        }
+    }
+
+    // Sort by filename
+    tracks.sort_by(|a, b| {
+        a.filename
+            .to_lowercase()
+            .cmp(&b.filename.to_lowercase())
+    });
+
+    Ok(tracks)
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -247,6 +323,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             scan_directory,
             scan_local,
+            scan_files,
             get_cover_art,
             get_backgrounds,
             get_app_dir,
