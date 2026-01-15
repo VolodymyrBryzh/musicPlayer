@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, CSSProperties } from 'react';
 import Visualizer from './components/Visualizer';
+import DynamicBackground from './components/DynamicBackground';
 import SettingsPanel from './components/SettingsPanel';
 import PlayerControls from './components/PlayerControls';
 import QueueList from './components/QueueList';
-import { ThemeMode, SongMetadata, PlayerState } from './types';
+import { ThemeMode, BackgroundMode, SongMetadata, PlayerState } from './types';
 import { parseMetadata, getAudioFilesFromDataTransfer } from './utils/audioHelpers';
 
 const App: React.FC = () => {
@@ -12,6 +13,8 @@ const App: React.FC = () => {
     const [activePlaylist, setActivePlaylist] = useState<File[]>([]);
     const [currentTrackIndex, setCurrentTrackIndex] = useState<number>(0);
     const [theme, setTheme] = useState<ThemeMode>(ThemeMode.MONO);
+    // Background Mode is now an array to support multiple simultaneous effects
+    const [activeBackgrounds, setActiveBackgrounds] = useState<BackgroundMode[]>([]);
     const [mobileView, setMobileView] = useState<'player' | 'settings' | 'queue'>('player');
     const [metadata, setMetadata] = useState<SongMetadata>({
         title: 'Waiting...',
@@ -100,10 +103,8 @@ const App: React.FC = () => {
         let startIndex = 0;
 
         // If shuffle is ON, randomize immediately.
-        // If shuffle is OFF, keep A-Z but start at a random song as requested.
         if (playerState.isShuffle) {
             newPlaylist = newPlaylist.sort(() => Math.random() - 0.5);
-            // startIndex remains 0, which is the first of the random list
         } else if (newPlaylist.length > 0) {
             startIndex = Math.floor(Math.random() * newPlaylist.length);
         }
@@ -160,7 +161,7 @@ const App: React.FC = () => {
             audio.removeEventListener('loadedmetadata', updateDuration);
             audio.removeEventListener('ended', handleEnded);
         };
-    }, []); // Run once, rely on refs for dynamic logic
+    }, []); 
 
     const togglePlay = () => {
         if (activePlaylist.length === 0) return;
@@ -185,16 +186,11 @@ const App: React.FC = () => {
         let newIndex = 0;
 
         if (newShuffleState) {
-            // Enable Shuffle:
-            // 1. Get all other files
             const others = originalFiles.filter(f => f !== currentFile);
-            // 2. Shuffle them
             const shuffledOthers = others.sort(() => Math.random() - 0.5);
-            // 3. Put current file at top
             newPlaylist = [currentFile, ...shuffledOthers];
             newIndex = 0;
         } else {
-            // Disable Shuffle: Restore original order, find where current song is
             newPlaylist = [...originalFiles];
             newIndex = newPlaylist.indexOf(currentFile);
             if (newIndex === -1) newIndex = 0;
@@ -202,6 +198,20 @@ const App: React.FC = () => {
         
         setActivePlaylist(newPlaylist);
         setCurrentTrackIndex(newIndex);
+    };
+
+    const toggleBackgroundMode = (mode: BackgroundMode) => {
+        if (mode === BackgroundMode.NONE) {
+            setActiveBackgrounds([]);
+            return;
+        }
+        setActiveBackgrounds(prev => {
+            if (prev.includes(mode)) {
+                return prev.filter(m => m !== mode);
+            } else {
+                return [...prev, mode];
+            }
+        });
     };
 
     const seek = (percentage: number) => {
@@ -226,7 +236,6 @@ const App: React.FC = () => {
     const handleDrop = async (e: React.DragEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        
         const files = await getAudioFilesFromDataTransfer(e.dataTransfer);
         if (files.length > 0) handleFilesSelected(files);
     };
@@ -300,17 +309,27 @@ const App: React.FC = () => {
             onDragOver={handleDragOver}
             onDrop={handleDrop}
         >
-            {/* Background Visualizer */}
+            {/* Background Layer z-[1] */}
+            <DynamicBackground 
+                activeModes={activeBackgrounds} 
+                theme={theme}
+                extractedColor={metadata.color} 
+            />
+
+            {/* Visualizer Layer z-[2] */}
             <Visualizer 
                 analyser={analyser} 
                 theme={theme} 
                 extractedColor={metadata.color} 
             />
 
-            <div className="flex flex-col md:flex-row items-center justify-center relative z-10 w-full h-full md:w-auto md:h-auto">
+            {/* UI Layer z-10/20 */}
+            <div className="flex flex-col md:flex-row items-center justify-center relative z-20 w-full h-full md:w-auto md:h-auto">
                 <SettingsPanel 
                     currentTheme={theme} 
                     onSetTheme={setTheme}
+                    activeBackgrounds={activeBackgrounds}
+                    onToggleBgMode={toggleBackgroundMode}
                     isOpenMobile={mobileView === 'settings'}
                     onCloseMobile={() => setMobileView('player')}
                 />

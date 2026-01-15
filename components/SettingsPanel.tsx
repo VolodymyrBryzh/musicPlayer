@@ -1,19 +1,33 @@
 import React from 'react';
 import { X, Github } from 'lucide-react';
-import { ThemeMode } from '../types';
+import { ThemeMode, BackgroundMode } from '../types';
 
 interface SettingsPanelProps {
     currentTheme: ThemeMode;
     onSetTheme: (theme: ThemeMode) => void;
+    activeBackgrounds: BackgroundMode[];
+    onToggleBgMode: (mode: BackgroundMode) => void;
     isOpenMobile: boolean;
     onCloseMobile: () => void;
 }
 
-const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentTheme, onSetTheme, isOpenMobile, onCloseMobile }) => {
+const SettingsPanel: React.FC<SettingsPanelProps> = ({ 
+    currentTheme, 
+    onSetTheme, 
+    activeBackgrounds, 
+    onToggleBgMode, 
+    isOpenMobile, 
+    onCloseMobile 
+}) => {
     // Dynamic classes based on mobile state
+    // Reduced height from 480px to 420px to match QueueList
     const containerClasses = isOpenMobile
-        ? "fixed inset-0 z-50 m-auto w-[85%] max-w-[300px] h-[350px] rounded-[15px] border border-[var(--border)] bg-[var(--surface-main)] backdrop-blur-xl shadow-2xl flex flex-col p-[30px]"
-        : "hidden md:flex bg-[var(--surface-side)] backdrop-blur-xl w-[220px] h-[420px] rounded-l-[15px] border border-[var(--border)] border-r-0 relative z-10 -mr-[15px] p-[20px] pr-[30px] flex-col shadow-[-5px_10px_30px_rgba(0,0,0,0.4)]";
+        ? "fixed inset-0 z-50 m-auto w-[85%] max-w-[300px] h-[500px] rounded-[15px] border border-[var(--border)] bg-[var(--surface-main)] backdrop-blur-xl shadow-2xl flex flex-col p-[30px]"
+        : "hidden md:flex bg-[var(--surface-side)] backdrop-blur-xl w-[220px] h-[420px] rounded-l-[15px] border border-[var(--border)] border-r-0 relative z-20 -mr-[15px] p-[20px] pr-[30px] flex-col shadow-[-5px_10px_30px_rgba(0,0,0,0.4)]";
+
+    const isStatic = activeBackgrounds.length === 0 || (activeBackgrounds.length === 1 && activeBackgrounds[0] === BackgroundMode.NONE);
+    const isAurora = activeBackgrounds.includes(BackgroundMode.AURORA);
+    const isParticles = activeBackgrounds.includes(BackgroundMode.PARTICLES);
 
     return (
         <>
@@ -36,7 +50,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentTheme, onSetTheme,
                     </button>
                 </div>
 
-                <div className="mb-5 md:text-right flex-grow">
+                <div className="mb-5 md:text-right flex-grow overflow-y-auto custom-scrollbar">
+                    {/* Color Theme Section */}
                     <div className="text-[9px] text-[var(--subtext)] uppercase tracking-[1px] mb-4 md:mb-2">Color Theme</div>
                     
                     <button 
@@ -44,7 +59,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentTheme, onSetTheme,
                         className={`block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${currentTheme === ThemeMode.MONO ? 'text-[var(--primary)] font-bold relative' : 'text-[var(--subtext)]'}`}
                     >
                         Monochrome
-                        {currentTheme === ThemeMode.MONO && <div className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
+                        {currentTheme === ThemeMode.MONO && <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
                     </button>
 
                     <button 
@@ -52,7 +67,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentTheme, onSetTheme,
                         className={`block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${currentTheme === ThemeMode.BLACK_WHITE ? 'text-[var(--primary)] font-bold relative' : 'text-[var(--subtext)]'}`}
                     >
                         Black & White
-                        {currentTheme === ThemeMode.BLACK_WHITE && <div className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
+                        {currentTheme === ThemeMode.BLACK_WHITE && <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
                     </button>
 
                     <button 
@@ -60,7 +75,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentTheme, onSetTheme,
                         className={`block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${currentTheme === ThemeMode.ACCENT ? 'text-[var(--primary)] font-bold relative' : 'text-[var(--subtext)]'}`}
                     >
                         Cover Accent
-                         {currentTheme === ThemeMode.ACCENT && <div className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
+                         {currentTheme === ThemeMode.ACCENT && <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
                     </button>
 
                     <button 
@@ -68,7 +83,34 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentTheme, onSetTheme,
                         className={`block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${currentTheme === ThemeMode.ADAPTIVE ? 'text-[var(--primary)] font-bold relative' : 'text-[var(--subtext)]'}`}
                     >
                         Adaptive
-                         {currentTheme === ThemeMode.ADAPTIVE && <div className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
+                         {currentTheme === ThemeMode.ADAPTIVE && <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
+                    </button>
+
+                    {/* Dynamic Background Section */}
+                    <div className="text-[9px] text-[var(--subtext)] uppercase tracking-[1px] mt-6 mb-4 md:mb-2">Background</div>
+                    
+                    <button 
+                        onClick={() => onToggleBgMode(BackgroundMode.NONE)}
+                        className={`block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${isStatic ? 'text-[var(--primary)] font-bold relative' : 'text-[var(--subtext)]'}`}
+                    >
+                        Static (Reset)
+                         {isStatic && <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
+                    </button>
+
+                    <button 
+                        onClick={() => onToggleBgMode(BackgroundMode.AURORA)}
+                        className={`block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${isAurora ? 'text-[var(--primary)] font-bold relative' : 'text-[var(--subtext)]'}`}
+                    >
+                        Aurora
+                         {isAurora && <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
+                    </button>
+
+                    <button 
+                        onClick={() => onToggleBgMode(BackgroundMode.PARTICLES)}
+                        className={`block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${isParticles ? 'text-[var(--primary)] font-bold relative' : 'text-[var(--subtext)]'}`}
+                    >
+                        Particles
+                         {isParticles && <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
                     </button>
                 </div>
 

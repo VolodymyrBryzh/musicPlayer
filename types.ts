@@ -5,6 +5,12 @@ export enum ThemeMode {
     BLACK_WHITE = 'black_white',
 }
 
+export enum BackgroundMode {
+    NONE = 'none',
+    AURORA = 'aurora',
+    PARTICLES = 'particles',
+}
+
 export interface SongMetadata {
     title: string;
     artist: string;
