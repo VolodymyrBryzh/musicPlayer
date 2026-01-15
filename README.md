@@ -60,7 +60,7 @@ React + TypeScript
 
 <br>
 
-[**🚀 Try Online**](#) · [View Code](https://github.com/VolodymyrBryzh/musicPlayer/tree/web)
+[**🚀 Try Online**](https://volodymyrbryzh.github.io/musicPlayer/) · [View Code](https://github.com/VolodymyrBryzh/musicPlayer/tree/web)
 
 </td>
 </tr>
