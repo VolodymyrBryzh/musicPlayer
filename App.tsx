@@ -212,13 +212,37 @@ const App: React.FC = () => {
         }
     };
 
+    const handleDragEnter = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'copy';
+    };
+
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
         e.stopPropagation();
+        
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            const files = (Array.from(e.dataTransfer.files) as File[]).filter(file => file.type.startsWith('audio/'));
+            const files = Array.from(e.dataTransfer.files).filter(file => 
+                file.type.startsWith('audio/') || 
+                /\.(mp3|wav|ogg|m4a|flac)$/i.test(file.name)
+            );
             if (files.length > 0) handleFilesSelected(files);
         }
+    };
+
+    const handleDropOnRoot = (e: React.DragEvent) => {
+        handleDrop(e);
+    };
+
+    const handleDropOnDrop = (e: React.DragEvent) => {
+        // This is strictly for the drop event on the main container
+        handleDrop(e);
     };
 
     // Construct Dynamic CSS Variables based on Theme
@@ -234,32 +258,45 @@ const App: React.FC = () => {
             '--slider-bg': '#2a2a2a',
         };
 
-        if (theme === ThemeMode.MONO) {
+        if (theme === ThemeMode.BLACK_WHITE) {
+             return {
+                ...baseStyles,
+                '--bg': '#000000',
+                '--surface-main': 'rgba(0, 0, 0, 0.85)',
+                '--surface-side': 'rgba(0, 0, 0, 0.7)',
+                '--primary': '#ffffff',
+                '--slider-fill': '#ffffff',
+                '--text': '#ffffff',
+                '--subtext': '#888888',
+                '--border': '#333333',
+                '--slider-bg': '#333333',
+            } as CSSProperties;
+        } else if (theme === ThemeMode.MONO) {
             return {
                 ...baseStyles,
                 '--bg': '#050505',
-                '--surface-main': '#141414',
-                '--surface-side': '#0e0e0e',
+                '--surface-main': 'rgba(20, 20, 20, 0.85)',
+                '--surface-side': 'rgba(14, 14, 14, 0.7)',
                 '--primary': '#ffffff',
                 '--slider-fill': '#ffffff',
-                '--border': '#1f1f1f',
+                '--border': 'rgba(31, 31, 31, 0.5)',
             } as CSSProperties;
         } else if (theme === ThemeMode.ACCENT) {
             return {
                 ...baseStyles,
                 '--bg': '#050505',
-                '--surface-main': '#141414',
-                '--surface-side': '#0e0e0e',
+                '--surface-main': 'rgba(20, 20, 20, 0.85)',
+                '--surface-side': 'rgba(14, 14, 14, 0.7)',
                 '--primary': `rgb(${r},${g},${b})`,
                 '--slider-fill': `rgb(${r},${g},${b})`,
-                '--border': '#1f1f1f',
+                '--border': 'rgba(31, 31, 31, 0.5)',
             } as CSSProperties;
         } else {
             // Adaptive
             return {
                 ...baseStyles,
                 '--bg': `rgb(${Math.floor(r * 0.1)},${Math.floor(g * 0.1)},${Math.floor(b * 0.1)})`,
-                '--surface-main': `rgb(${Math.floor(r * 0.15)},${Math.floor(g * 0.15)},${Math.floor(b * 0.15)})`,
+                '--surface-main': `rgba(${Math.floor(r * 0.15)},${Math.floor(g * 0.15)},${Math.floor(b * 0.15)}, 0.8)`,
                 '--surface-side': `rgba(${Math.floor(r * 0.15)},${Math.floor(g * 0.15)},${Math.floor(b * 0.15)}, 0.6)`,
                 '--primary': `rgb(${Math.min(r + 50, 255)},${Math.min(g + 50, 255)},${Math.min(b + 50, 255)})`,
                 '--text': '#ffffff',
@@ -273,7 +310,8 @@ const App: React.FC = () => {
         <div 
             className="flex justify-center items-center h-screen w-screen overflow-hidden select-none font-sans"
             style={getThemeStyles()}
-            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragOver}
             onDrop={handleDrop}
         >
             {/* Background Visualizer */}

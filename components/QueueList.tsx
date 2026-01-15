@@ -30,9 +30,31 @@ const QueueList: React.FC<QueueListProps> = ({ playlist, currentTrackIndex, onTr
         }
     };
 
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'copy';
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            const files = Array.from(e.dataTransfer.files).filter(file => 
+                file.type.startsWith('audio/') || 
+                /\.(mp3|wav|ogg|m4a|flac)$/i.test(file.name)
+            );
+            if (files.length > 0) {
+                onFilesSelected(files);
+                if (isOpenMobile) onCloseMobile();
+            }
+        }
+    };
+
     const containerClasses = isOpenMobile
-        ? "fixed inset-0 z-50 m-auto w-[85%] max-w-[300px] h-[500px] max-h-[70vh] rounded-[15px] border border-[var(--border)] bg-[var(--surface-main)] shadow-2xl flex flex-col p-[20px]"
-        : "hidden md:flex bg-[var(--surface-side)] w-[220px] h-[420px] rounded-r-[15px] border border-[var(--border)] border-l-0 relative z-10 -ml-[15px] p-[20px] pl-[30px] flex-col shadow-[5px_10px_30px_rgba(0,0,0,0.4)]";
+        ? "fixed inset-0 z-50 m-auto w-[85%] max-w-[300px] h-[500px] max-h-[70vh] rounded-[15px] border border-[var(--border)] bg-[var(--surface-main)] backdrop-blur-xl shadow-2xl flex flex-col p-[20px]"
+        : "hidden md:flex bg-[var(--surface-side)] backdrop-blur-xl w-[220px] h-[420px] rounded-r-[15px] border border-[var(--border)] border-l-0 relative z-10 -ml-[15px] p-[20px] pl-[30px] flex-col shadow-[5px_10px_30px_rgba(0,0,0,0.4)]";
 
     return (
         <>
@@ -44,7 +66,11 @@ const QueueList: React.FC<QueueListProps> = ({ playlist, currentTrackIndex, onTr
                 />
             )}
 
-            <div className={`${containerClasses} transition-colors duration-500`}>
+            <div 
+                className={`${containerClasses} transition-colors duration-500`}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+            >
                 <div className="flex justify-between items-center text-[10px] text-[var(--subtext)] tracking-[2px] uppercase font-bold mb-4 pb-2.5 border-b border-[var(--border)]">
                     <div className="flex gap-2">
                         <span>Play Queue</span>

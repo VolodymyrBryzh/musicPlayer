@@ -39,7 +39,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
     };
 
     return (
-        <div className="bg-[var(--surface-main)] p-6 md:p-10 rounded-[20px] shadow-[0_0_50px_rgba(0,0,0,0.8)] w-full max-w-[340px] md:w-[300px] h-auto md:h-[480px] text-center relative z-20 border border-[var(--border)] flex flex-col justify-between transition-colors duration-500 mx-4 md:mx-0">
+        <div className="bg-[var(--surface-main)] backdrop-blur-xl p-6 md:p-10 rounded-[20px] shadow-[0_0_50px_rgba(0,0,0,0.8)] w-full max-w-[340px] md:w-[300px] h-auto md:h-[480px] text-center relative z-20 border border-[var(--border)] flex flex-col justify-between transition-colors duration-500 mx-4 md:mx-0">
             
             {/* Mobile Navigation Header */}
             <div className="flex justify-between items-center w-full md:hidden mb-4">

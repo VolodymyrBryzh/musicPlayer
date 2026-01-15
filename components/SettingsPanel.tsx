@@ -1,5 +1,5 @@
 import React from 'react';
-import { X } from 'lucide-react';
+import { X, Github } from 'lucide-react';
 import { ThemeMode } from '../types';
 
 interface SettingsPanelProps {
@@ -12,8 +12,8 @@ interface SettingsPanelProps {
 const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentTheme, onSetTheme, isOpenMobile, onCloseMobile }) => {
     // Dynamic classes based on mobile state
     const containerClasses = isOpenMobile
-        ? "fixed inset-0 z-50 m-auto w-[85%] max-w-[300px] h-[350px] rounded-[15px] border border-[var(--border)] bg-[var(--surface-main)] shadow-2xl flex flex-col p-[30px]"
-        : "hidden md:flex bg-[var(--surface-side)] w-[220px] h-[420px] rounded-l-[15px] border border-[var(--border)] border-r-0 relative z-10 -mr-[15px] p-[20px] pr-[30px] flex-col shadow-[-5px_10px_30px_rgba(0,0,0,0.4)]";
+        ? "fixed inset-0 z-50 m-auto w-[85%] max-w-[300px] h-[350px] rounded-[15px] border border-[var(--border)] bg-[var(--surface-main)] backdrop-blur-xl shadow-2xl flex flex-col p-[30px]"
+        : "hidden md:flex bg-[var(--surface-side)] backdrop-blur-xl w-[220px] h-[420px] rounded-l-[15px] border border-[var(--border)] border-r-0 relative z-10 -mr-[15px] p-[20px] pr-[30px] flex-col shadow-[-5px_10px_30px_rgba(0,0,0,0.4)]";
 
     return (
         <>
@@ -36,7 +36,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentTheme, onSetTheme,
                     </button>
                 </div>
 
-                <div className="mb-5 md:text-right">
+                <div className="mb-5 md:text-right flex-grow">
                     <div className="text-[9px] text-[var(--subtext)] uppercase tracking-[1px] mb-4 md:mb-2">Color Theme</div>
                     
                     <button 
@@ -45,6 +45,14 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentTheme, onSetTheme,
                     >
                         Monochrome
                         {currentTheme === ThemeMode.MONO && <div className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
+                    </button>
+
+                    <button 
+                        onClick={() => onSetTheme(ThemeMode.BLACK_WHITE)}
+                        className={`block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${currentTheme === ThemeMode.BLACK_WHITE ? 'text-[var(--primary)] font-bold relative' : 'text-[var(--subtext)]'}`}
+                    >
+                        Black & White
+                        {currentTheme === ThemeMode.BLACK_WHITE && <div className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
                     </button>
 
                     <button 
@@ -63,6 +71,16 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentTheme, onSetTheme,
                          {currentTheme === ThemeMode.ADAPTIVE && <div className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
                     </button>
                 </div>
+
+                <a 
+                    href="https://github.com/VolodymyrBryzh/musicPlayer.git"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 w-full text-[10px] text-[var(--subtext)] border border-[var(--border)] py-3 md:py-2.5 rounded bg-transparent uppercase tracking-wider transition-all duration-200 hover:border-[#444] hover:text-[var(--primary)] hover:bg-white/5 cursor-pointer shrink-0 no-underline"
+                >
+                    <Github size={12} />
+                    <span>GitHub Repo</span>
+                </a>
             </div>
         </>
     );
