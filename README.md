@@ -77,7 +77,7 @@ React + TypeScript
 | Shuffle / Repeat | ✓ | ✓ |
 | Queue Management | ✓ | ✓ |
 | Custom Backgrounds | ✓ | - |
-| F11 Fullscreen | ✓ | - |
+| F11 Fullscreen | ✓ | ✓ |
 | Folder Scanning | ✓ | - |
 | Drag & Drop | - | ✓ |
 
