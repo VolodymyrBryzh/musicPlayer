@@ -1,4 +1,4 @@
-import { Track, CoverArt } from '../types';
+import { Track, CoverArt, BackgroundImage } from '../types';
 
 // Check if running in Tauri
 export const isTauri = (): boolean => {
@@ -19,14 +19,24 @@ export async function scanDirectory(path: string): Promise<Track[]> {
     return invoke<Track[]>('scan_directory', { path });
 }
 
+// Scan local folder (where app is located) for audio files
+export async function scanLocal(): Promise<Track[]> {
+    return invoke<Track[]>('scan_local');
+}
+
 // Get cover art from audio file
 export async function getCoverArt(path: string): Promise<CoverArt | null> {
     return invoke<CoverArt | null>('get_cover_art', { path });
 }
 
-// Get background images from directory
-export async function getBackgrounds(path: string): Promise<string[]> {
-    return invoke<string[]>('get_backgrounds', { path });
+// Get background images from app's backgrounds folder
+export async function getBackgrounds(): Promise<BackgroundImage[]> {
+    return invoke<BackgroundImage[]>('get_backgrounds');
+}
+
+// Get app directory path
+export async function getAppDir(): Promise<string> {
+    return invoke<string>('get_app_dir');
 }
 
 // Open folder dialog
@@ -44,10 +54,10 @@ export async function openFolderDialog(): Promise<string | null> {
 }
 
 // Convert file path to asset URL for Tauri
-export function convertFileSrc(path: string): string {
+export async function convertFileSrc(path: string): Promise<string> {
     if (isTauri() && path) {
-        // Tauri 2.0 uses convertFileSrc from @tauri-apps/api/core
-        return `asset://localhost/${encodeURIComponent(path)}`;
+        const { convertFileSrc: tauriConvert } = await import('@tauri-apps/api/core');
+        return tauriConvert(path);
     }
     return path;
 }

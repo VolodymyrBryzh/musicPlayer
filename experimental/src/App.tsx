@@ -3,16 +3,20 @@ import Visualizer from './components/Visualizer';
 import SettingsPanel from './components/SettingsPanel';
 import PlayerControls from './components/PlayerControls';
 import QueueList from './components/QueueList';
-import { ThemeMode, SongMetadata, PlayerState } from './types';
-import { parseMetadata } from './utils/audioHelpers';
+import { ThemeMode, SongMetadata, PlayerState, Track, BackgroundImage } from './types';
+import { scanDirectory, scanLocal, getCoverArt, convertFileSrc, coverArtToDataUrl, getBackgrounds } from './utils/tauri';
+import { extractDominantColor } from './utils/audioHelpers';
 
 const App: React.FC = () => {
     // State
-    const [originalFiles, setOriginalFiles] = useState<File[]>([]);
-    const [activePlaylist, setActivePlaylist] = useState<File[]>([]);
+    const [originalTracks, setOriginalTracks] = useState<Track[]>([]);
+    const [activePlaylist, setActivePlaylist] = useState<Track[]>([]);
     const [currentTrackIndex, setCurrentTrackIndex] = useState<number>(0);
     const [theme, setTheme] = useState<ThemeMode>(ThemeMode.MONO);
     const [mobileView, setMobileView] = useState<'player' | 'settings' | 'queue'>('player');
+    const [backgrounds, setBackgrounds] = useState<BackgroundImage[]>([]);
+    const [currentBackground, setCurrentBackground] = useState<string | null>(null);
+    const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null);
     const [metadata, setMetadata] = useState<SongMetadata>({
         title: 'Waiting...',
         artist: 'Select folder to start',
@@ -33,6 +37,73 @@ const App: React.FC = () => {
     const analyserRef = useRef<AnalyserNode | null>(null);
     const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
     const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
+
+    // Load backgrounds on mount
+    useEffect(() => {
+        const loadBackgrounds = async () => {
+            try {
+                const bgs = await getBackgrounds();
+                setBackgrounds(bgs);
+            } catch (e) {
+                console.error("Failed to load backgrounds", e);
+            }
+        };
+        loadBackgrounds();
+    }, []);
+
+    // Fullscreen toggle using Rust command
+    const toggleFullscreen = async () => {
+        try {
+            const { invoke } = await import('@tauri-apps/api/core');
+            await invoke('toggle_fullscreen');
+        } catch (err) {
+            console.error('Fullscreen toggle failed', err);
+        }
+    };
+
+    // F11 and Escape for fullscreen control
+    useEffect(() => {
+        const handleKeyDown = async (e: KeyboardEvent) => {
+            // F11 to toggle fullscreen
+            if (e.key === 'F11') {
+                e.preventDefault();
+                e.stopPropagation();
+                await toggleFullscreen();
+                return;
+            }
+            
+            // Escape to exit fullscreen - check if fullscreen first
+            if (e.key === 'Escape') {
+                try {
+                    const { getCurrentWindow } = await import('@tauri-apps/api/window');
+                    const win = getCurrentWindow();
+                    const isFullscreen = await win.isFullscreen();
+                    if (isFullscreen) {
+                        await toggleFullscreen();
+                    }
+                } catch (err) {
+                    console.error('Escape handler failed', err);
+                }
+            }
+        };
+        
+        // Capture phase to intercept before browser
+        document.addEventListener('keydown', handleKeyDown, true);
+        return () => document.removeEventListener('keydown', handleKeyDown, true);
+    }, []);
+
+    // Update background URL when currentBackground changes
+    useEffect(() => {
+        const updateBgUrl = async () => {
+            if (currentBackground) {
+                const url = await convertFileSrc(currentBackground);
+                setBackgroundUrl(url);
+            } else {
+                setBackgroundUrl(null);
+            }
+        };
+        updateBgUrl();
+    }, [currentBackground]);
 
     // Initial Audio Setup
     useEffect(() => {
@@ -83,29 +154,41 @@ const App: React.FC = () => {
     };
 
     // Load Track Logic
-    const loadTrack = async (index: number, files: File[] = activePlaylist) => {
-        if (files.length === 0) return;
+    const loadTrack = async (index: number, tracks: Track[] = activePlaylist) => {
+        if (tracks.length === 0) return;
         
-        const file = files[index];
+        const track = tracks[index];
         const audio = audioRef.current;
 
         // Revoke previous cover URL to prevent memory leaks
-        if (metadata.coverUrl) {
+        if (metadata.coverUrl && metadata.coverUrl.startsWith('blob:')) {
             URL.revokeObjectURL(metadata.coverUrl);
         }
         
-        // Load metadata
-        const meta = await parseMetadata(file);
-        setMetadata(meta);
-
-        // Load Audio
-        const objectUrl = URL.createObjectURL(file);
-        // Revoke previous audio object URL if it was a blob
-        if (audio.src.startsWith('blob:')) {
-            URL.revokeObjectURL(audio.src);
+        // Load metadata from track and cover art
+        let coverUrl: string | null = null;
+        let color: { r: number; g: number; b: number } | null = null;
+        
+        try {
+            const coverArt = await getCoverArt(track.path);
+            if (coverArt) {
+                coverUrl = coverArtToDataUrl(coverArt);
+                color = await extractDominantColor(coverUrl);
+            }
+        } catch (e) {
+            console.error("Failed to load cover art", e);
         }
         
-        audio.src = objectUrl;
+        setMetadata({
+            title: track.title || track.filename.replace(/\.[^/.]+$/, ""),
+            artist: track.artist || 'Unknown Artist',
+            coverUrl,
+            color
+        });
+
+        // Load Audio using Tauri asset protocol
+        const audioUrl = await convertFileSrc(track.path);
+        audio.src = audioUrl;
         audio.load();
         
         initAudioContext();
@@ -119,18 +202,51 @@ const App: React.FC = () => {
         }
     };
 
-    const handleFilesSelected = (files: File[]) => {
-        const sorted = files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
-        setOriginalFiles(sorted);
-        
-        let newPlaylist = [...sorted];
-        if (playerState.isShuffle) {
-            newPlaylist = newPlaylist.sort(() => Math.random() - 0.5);
+    const handleFolderSelected = async (folderPath: string) => {
+        try {
+            const tracks = await scanDirectory(folderPath);
+            const sorted = tracks.sort((a, b) => a.filename.localeCompare(b.filename, undefined, { numeric: true, sensitivity: 'base' }));
+            setOriginalTracks(sorted);
+            
+            let newPlaylist = [...sorted];
+            if (playerState.isShuffle) {
+                newPlaylist = newPlaylist.sort(() => Math.random() - 0.5);
+            }
+            
+            setActivePlaylist(newPlaylist);
+            setCurrentTrackIndex(0);
+            loadTrack(0, newPlaylist);
+        } catch (e) {
+            console.error("Failed to scan directory", e);
         }
-        
-        setActivePlaylist(newPlaylist);
-        setCurrentTrackIndex(0);
-        loadTrack(0, newPlaylist);
+    };
+
+    const handleScanLocal = async () => {
+        try {
+            const tracks = await scanLocal();
+            if (tracks.length === 0) {
+                setMetadata({
+                    title: 'No music found',
+                    artist: 'Put MP3 files next to the app',
+                    coverUrl: null,
+                    color: null
+                });
+                return;
+            }
+            const sorted = tracks.sort((a, b) => a.filename.localeCompare(b.filename, undefined, { numeric: true, sensitivity: 'base' }));
+            setOriginalTracks(sorted);
+            
+            let newPlaylist = [...sorted];
+            if (playerState.isShuffle) {
+                newPlaylist = newPlaylist.sort(() => Math.random() - 0.5);
+            }
+            
+            setActivePlaylist(newPlaylist);
+            setCurrentTrackIndex(0);
+            loadTrack(0, newPlaylist);
+        } catch (e) {
+            console.error("Failed to scan local", e);
+        }
     };
 
     const playNext = () => {
@@ -165,19 +281,19 @@ const App: React.FC = () => {
         
         if (activePlaylist.length === 0) return;
 
-        const currentFile = activePlaylist[currentTrackIndex];
-        let newPlaylist: File[];
+        const currentTrack = activePlaylist[currentTrackIndex];
+        let newPlaylist: Track[];
 
         if (newShuffleState) {
             // Enable Shuffle
-            const others = originalFiles.filter(f => f !== currentFile);
+            const others = originalTracks.filter(t => t.id !== currentTrack.id);
             const shuffledOthers = others.sort(() => Math.random() - 0.5);
-            newPlaylist = [currentFile, ...shuffledOthers];
+            newPlaylist = [currentTrack, ...shuffledOthers];
             setCurrentTrackIndex(0);
         } else {
             // Disable Shuffle (restore original order)
-            newPlaylist = [...originalFiles];
-            const newIndex = newPlaylist.indexOf(currentFile);
+            newPlaylist = [...originalTracks];
+            const newIndex = newPlaylist.findIndex(t => t.id === currentTrack.id);
             setCurrentTrackIndex(newIndex !== -1 ? newIndex : 0);
         }
         setActivePlaylist(newPlaylist);
@@ -191,14 +307,8 @@ const App: React.FC = () => {
         }
     };
 
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            const files = (Array.from(e.dataTransfer.files) as File[]).filter(file => file.type.startsWith('audio/'));
-            if (files.length > 0) handleFilesSelected(files);
-        }
-    };
+    // Drag & drop is not supported in Tauri native mode
+    // Files must be selected via folder dialog
 
     // Construct Dynamic CSS Variables based on Theme
     const getThemeStyles = (): CSSProperties => {
@@ -252,9 +362,17 @@ const App: React.FC = () => {
         <div 
             className="flex justify-center items-center h-screen w-screen overflow-hidden select-none font-sans"
             style={getThemeStyles()}
-            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            onDrop={handleDrop}
         >
+            {/* Custom Background Image - double click for fullscreen */}
+            <div 
+                className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat cursor-pointer"
+                style={backgroundUrl ? { 
+                    backgroundImage: `url(${backgroundUrl})`,
+                    filter: 'brightness(0.3) saturate(0.8)'
+                } : {}}
+                onDoubleClick={toggleFullscreen}
+            />
+            
             {/* Background Visualizer */}
             <Visualizer 
                 analyser={analyser} 
@@ -266,6 +384,9 @@ const App: React.FC = () => {
                 <SettingsPanel 
                     currentTheme={theme} 
                     onSetTheme={setTheme}
+                    backgrounds={backgrounds}
+                    currentBackground={currentBackground}
+                    onSetBackground={setCurrentBackground}
                     isOpenMobile={mobileView === 'settings'}
                     onCloseMobile={() => setMobileView('player')}
                 />
@@ -288,7 +409,8 @@ const App: React.FC = () => {
                     playlist={activePlaylist}
                     currentTrackIndex={currentTrackIndex}
                     onTrackSelect={(idx) => { setCurrentTrackIndex(idx); loadTrack(idx); }}
-                    onFilesSelected={handleFilesSelected}
+                    onFolderSelected={handleFolderSelected}
+                    onScanLocal={handleScanLocal}
                     isOpenMobile={mobileView === 'queue'}
                     onCloseMobile={() => setMobileView('player')}
                 />

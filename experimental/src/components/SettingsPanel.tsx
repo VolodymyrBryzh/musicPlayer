@@ -1,19 +1,22 @@
 import React from 'react';
 import { X } from 'lucide-react';
-import { ThemeMode } from '../types';
+import { ThemeMode, BackgroundImage } from '../types';
 
 interface SettingsPanelProps {
     currentTheme: ThemeMode;
     onSetTheme: (theme: ThemeMode) => void;
+    backgrounds: BackgroundImage[];
+    currentBackground: string | null;
+    onSetBackground: (path: string | null) => void;
     isOpenMobile: boolean;
     onCloseMobile: () => void;
 }
 
-const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentTheme, onSetTheme, isOpenMobile, onCloseMobile }) => {
+const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentTheme, onSetTheme, backgrounds, currentBackground, onSetBackground, isOpenMobile, onCloseMobile }) => {
     // Dynamic classes based on mobile state
     const containerClasses = isOpenMobile
-        ? "fixed inset-0 z-50 m-auto w-[85%] max-w-[300px] h-[350px] rounded-[15px] border border-[var(--border)] bg-[var(--surface-main)] shadow-2xl flex flex-col p-[30px]"
-        : "hidden md:flex bg-[var(--surface-side)] w-[220px] h-[420px] rounded-l-[15px] border border-[var(--border)] border-r-0 relative z-10 -mr-[15px] p-[20px] pr-[30px] flex-col shadow-[-5px_10px_30px_rgba(0,0,0,0.4)]";
+        ? "fixed inset-0 z-50 m-auto w-[85%] max-w-[300px] h-[500px] max-h-[80vh] rounded-[15px] border border-[var(--border)] bg-[var(--surface-main)] shadow-2xl flex flex-col p-[30px] overflow-hidden"
+        : "hidden md:flex bg-[var(--surface-side)] w-[220px] h-[420px] rounded-l-[15px] border border-[var(--border)] border-r-0 relative z-10 -mr-[15px] p-[20px] pr-[30px] flex-col shadow-[-5px_10px_30px_rgba(0,0,0,0.4)] overflow-hidden";
 
     return (
         <>
@@ -62,6 +65,38 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentTheme, onSetTheme,
                         Adaptive
                          {currentTheme === ThemeMode.ADAPTIVE && <span className="hidden md:inline absolute -right-3 top-1 text-[var(--primary)]">•</span>}
                     </button>
+                </div>
+
+                {/* Background Section */}
+                <div className="flex-1 overflow-hidden flex flex-col">
+                    <div className="text-[9px] text-[var(--subtext)] uppercase tracking-[1px] mb-3 md:text-right">Background</div>
+                    
+                    <button 
+                        onClick={() => onSetBackground(null)}
+                        className={`block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${currentBackground === null ? 'text-[var(--primary)] font-bold relative' : 'text-[var(--subtext)]'}`}
+                    >
+                        None
+                        {currentBackground === null && <span className="hidden md:inline absolute -right-3 top-1 text-[var(--primary)]">•</span>}
+                    </button>
+
+                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                        {backgrounds.length === 0 && (
+                            <div className="text-[var(--subtext)] text-[10px] opacity-50 italic md:text-right py-2">
+                                Put images in /backgrounds
+                            </div>
+                        )}
+                        {backgrounds.map((bg) => (
+                            <button 
+                                key={bg.path}
+                                onClick={() => onSetBackground(bg.path)}
+                                className={`relative block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${currentBackground === bg.path ? 'text-[var(--primary)] font-bold' : 'text-[var(--subtext)]'}`}
+                                title={bg.name}
+                            >
+                                <span className="block truncate">{bg.name}</span>
+                                {currentBackground === bg.path && <span className="hidden md:inline absolute -right-3 top-1/2 -translate-y-1/2 text-[var(--primary)]">•</span>}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
         </>

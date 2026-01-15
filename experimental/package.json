@@ -12,10 +12,12 @@
     "tauri:build": "tauri build"
   },
   "dependencies": {
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3",
+    "@tauri-apps/api": "^2.0.0",
+    "@tauri-apps/plugin-dialog": "^2.6.0",
+    "@tauri-apps/plugin-fs": "^2.4.5",
     "lucide-react": "^0.562.0",
-    "@tauri-apps/api": "^2.0.0"
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.0.0",

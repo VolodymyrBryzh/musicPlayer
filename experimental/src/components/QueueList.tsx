@@ -1,17 +1,19 @@
 import React, { useRef } from 'react';
 import { X } from 'lucide-react';
+import { Track } from '../types';
+import { openFolderDialog } from '../utils/tauri';
 
 interface QueueListProps {
-    playlist: File[];
+    playlist: Track[];
     currentTrackIndex: number;
     onTrackSelect: (index: number) => void;
-    onFilesSelected: (files: File[]) => void;
+    onFolderSelected: (folderPath: string) => void;
+    onScanLocal: () => void;
     isOpenMobile: boolean;
     onCloseMobile: () => void;
 }
 
-const QueueList: React.FC<QueueListProps> = ({ playlist, currentTrackIndex, onTrackSelect, onFilesSelected, isOpenMobile, onCloseMobile }) => {
-    const fileInputRef = useRef<HTMLInputElement>(null);
+const QueueList: React.FC<QueueListProps> = ({ playlist, currentTrackIndex, onTrackSelect, onFolderSelected, onScanLocal, isOpenMobile, onCloseMobile }) => {
     const activeItemRef = useRef<HTMLDivElement>(null);
 
     // Scroll to active item when it changes
@@ -21,11 +23,10 @@ const QueueList: React.FC<QueueListProps> = ({ playlist, currentTrackIndex, onTr
         }
     }, [currentTrackIndex, isOpenMobile]);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            const files = (Array.from(e.target.files) as File[]).filter(file => file.type.startsWith('audio/'));
-            onFilesSelected(files);
-            // On mobile, close queue after selecting (optional, but good UX)
+    const handleSelectFolder = async () => {
+        const folderPath = await openFolderDialog();
+        if (folderPath) {
+            onFolderSelected(folderPath);
             if (isOpenMobile) onCloseMobile();
         }
     };
@@ -62,12 +63,12 @@ const QueueList: React.FC<QueueListProps> = ({ playlist, currentTrackIndex, onTr
                             Queue is empty
                         </div>
                     )}
-                    {playlist.map((file, index) => {
+                    {playlist.map((track, index) => {
                         const isActive = index === currentTrackIndex;
-                        const name = file.name.replace(/\.[^/.]+$/, "");
+                        const name = track.title || track.filename.replace(/\.[^/.]+$/, "");
                         return (
                             <div 
-                                key={index}
+                                key={track.id}
                                 ref={isActive ? activeItemRef : null}
                                 onClick={() => {
                                     onTrackSelect(index);
@@ -83,22 +84,24 @@ const QueueList: React.FC<QueueListProps> = ({ playlist, currentTrackIndex, onTr
                         );
                     })}
                 </div>
-
-                <input 
-                    type="file" 
-                    ref={fileInputRef}
-                    className="hidden" 
-                    {...({ webkitdirectory: "", directory: "" } as any)}
-                    multiple 
-                    onChange={handleFileChange} 
-                />
                 
-                <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full text-[10px] text-[var(--subtext)] border border-[var(--border)] py-3 md:py-2.5 rounded bg-transparent uppercase tracking-wider transition-all duration-200 hover:border-[#444] hover:text-[var(--primary)] hover:bg-white/5 cursor-pointer shrink-0"
-                >
-                    Select Folder
-                </button>
+                <div className="flex flex-col gap-2 shrink-0">
+                    <button 
+                        onClick={() => {
+                            onScanLocal();
+                            if (isOpenMobile) onCloseMobile();
+                        }}
+                        className="w-full text-[10px] text-[var(--primary)] border border-[var(--primary)]/30 py-3 md:py-2.5 rounded bg-[var(--primary)]/5 uppercase tracking-wider transition-all duration-200 hover:border-[var(--primary)]/50 hover:bg-[var(--primary)]/10 cursor-pointer"
+                    >
+                        Scan All
+                    </button>
+                    <button 
+                        onClick={handleSelectFolder}
+                        className="w-full text-[10px] text-[var(--subtext)] border border-[var(--border)] py-3 md:py-2.5 rounded bg-transparent uppercase tracking-wider transition-all duration-200 hover:border-[#444] hover:text-[var(--primary)] hover:bg-white/5 cursor-pointer"
+                    >
+                        Select Folder
+                    </button>
+                </div>
             </div>
         </>
     );

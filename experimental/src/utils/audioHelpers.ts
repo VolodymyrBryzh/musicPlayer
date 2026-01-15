@@ -7,7 +7,7 @@ export const formatTime = (time: number): string => {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
 };
 
-export const extractColorFromImage = (imgSrc: string): Promise<{ r: number; g: number; b: number }> => {
+export const extractDominantColor = (imgSrc: string): Promise<{ r: number; g: number; b: number }> => {
     return new Promise((resolve) => {
         const img = new Image();
         img.crossOrigin = "Anonymous";
@@ -155,7 +155,7 @@ export const parseMetadata = async (file: File): Promise<SongMetadata> => {
                         defaultMeta.coverUrl = URL.createObjectURL(blob);
                         foundCover = true;
                         // Color extraction happens after loading the image
-                        defaultMeta.color = await extractColorFromImage(defaultMeta.coverUrl);
+                        defaultMeta.color = await extractDominantColor(defaultMeta.coverUrl);
                     }
                 }
             }

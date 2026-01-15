@@ -6,6 +6,7 @@ use id3::TagLike;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use walkdir::WalkDir;
+use tauri::Manager;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Track {
@@ -21,6 +22,12 @@ pub struct Track {
 pub struct CoverArt {
     pub data: String, // Base64 encoded
     pub mime_type: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct BackgroundImage {
+    pub path: String,
+    pub name: String,
 }
 
 /// Scan a directory for audio files
@@ -120,14 +127,66 @@ fn get_cover_art(path: String) -> Result<Option<CoverArt>, String> {
     Ok(None)
 }
 
-/// Get list of background images from a directory
+/// Get list of background images from the app's backgrounds folder
 #[tauri::command]
-fn get_backgrounds(path: String) -> Result<Vec<String>, String> {
+fn get_backgrounds() -> Result<Vec<BackgroundImage>, String> {
     let image_extensions = ["png", "jpg", "jpeg", "webp", "gif"];
-    let mut backgrounds: Vec<String> = Vec::new();
+    let mut backgrounds: Vec<BackgroundImage> = Vec::new();
 
-    for entry in WalkDir::new(&path)
-        .max_depth(1)
+    // Get app executable path and look for backgrounds folder next to it
+    let exe_path = std::env::current_exe().map_err(|e| e.to_string())?;
+    let app_dir = exe_path.parent().ok_or("Cannot get app directory")?;
+    let backgrounds_dir = app_dir.join("backgrounds");
+
+    // Create backgrounds folder if it doesn't exist
+    if !backgrounds_dir.exists() {
+        std::fs::create_dir_all(&backgrounds_dir).ok();
+    }
+
+    if backgrounds_dir.exists() {
+        for entry in WalkDir::new(&backgrounds_dir)
+            .max_depth(1)
+            .into_iter()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.file_type().is_file())
+        {
+            let file_path = entry.path();
+            if let Some(ext) = file_path.extension() {
+                let ext_str = ext.to_string_lossy().to_lowercase();
+                if image_extensions.contains(&ext_str.as_str()) {
+                    let name = file_path
+                        .file_stem()
+                        .map(|n| n.to_string_lossy().to_string())
+                        .unwrap_or_default();
+                    
+                    backgrounds.push(BackgroundImage {
+                        path: file_path.to_string_lossy().to_string(),
+                        name,
+                    });
+                }
+            }
+        }
+    }
+
+    backgrounds.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    Ok(backgrounds)
+}
+
+/// Scan all folders and subfolders in parent directory where the app folder is located
+#[tauri::command]
+fn scan_local(_app_handle: tauri::AppHandle) -> Result<Vec<Track>, String> {
+    let audio_extensions = ["mp3", "flac", "wav", "ogg", "m4a", "aac", "wma"];
+    let mut tracks: Vec<Track> = Vec::new();
+    let mut id = 0;
+
+    // Get app executable path, then go to parent of app folder
+    // e.g. if exe is in C:\Downloads\musicPlayer\app.exe
+    // scan C:\Downloads\ (parent of musicPlayer folder)
+    let exe_path = std::env::current_exe().map_err(|e| e.to_string())?;
+    let app_dir = exe_path.parent().ok_or("Cannot get app directory")?;
+    let scan_dir = app_dir.parent().unwrap_or(app_dir);
+
+    for entry in WalkDir::new(scan_dir)
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| e.file_type().is_file())
@@ -135,14 +194,52 @@ fn get_backgrounds(path: String) -> Result<Vec<String>, String> {
         let file_path = entry.path();
         if let Some(ext) = file_path.extension() {
             let ext_str = ext.to_string_lossy().to_lowercase();
-            if image_extensions.contains(&ext_str.as_str()) {
-                backgrounds.push(file_path.to_string_lossy().to_string());
+            if audio_extensions.contains(&ext_str.as_str()) {
+                let filename = file_path
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_default();
+
+                let (title, artist, album) = parse_metadata(file_path);
+
+                tracks.push(Track {
+                    id,
+                    path: file_path.to_string_lossy().to_string(),
+                    filename: filename.clone(),
+                    title: title.or(Some(filename.replace(&format!(".{}", ext_str), ""))),
+                    artist,
+                    album,
+                });
+                id += 1;
             }
         }
     }
 
-    backgrounds.sort();
-    Ok(backgrounds)
+    // Sort by filename
+    tracks.sort_by(|a, b| {
+        a.filename
+            .to_lowercase()
+            .cmp(&b.filename.to_lowercase())
+    });
+
+    Ok(tracks)
+}
+
+/// Get app directory path
+#[tauri::command]
+fn get_app_dir() -> Result<String, String> {
+    let exe_path = std::env::current_exe().map_err(|e| e.to_string())?;
+    let app_dir = exe_path.parent().ok_or("Cannot get app directory")?;
+    Ok(app_dir.to_string_lossy().to_string())
+}
+
+/// Toggle fullscreen mode
+#[tauri::command]
+async fn toggle_fullscreen(window: tauri::Window) -> Result<bool, String> {
+    let is_fullscreen = window.is_fullscreen().map_err(|e| e.to_string())?;
+    window.set_fullscreen(!is_fullscreen).map_err(|e| e.to_string())?;
+    window.set_decorations(is_fullscreen).map_err(|e| e.to_string())?;
+    Ok(!is_fullscreen)
 }
 
 fn main() {
@@ -152,8 +249,11 @@ fn main() {
         .plugin(tauri_plugin_fs::init())
         .invoke_handler(tauri::generate_handler![
             scan_directory,
+            scan_local,
             get_cover_art,
             get_backgrounds,
+            get_app_dir,
+            toggle_fullscreen,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
