@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, CSSProperties } from 'react';
 import Visualizer from './components/Visualizer';
+import DynamicBackground from './components/DynamicBackground';
 import SettingsPanel from './components/SettingsPanel';
 import PlayerControls from './components/PlayerControls';
 import QueueList from './components/QueueList';
-import { ThemeMode, SongMetadata, PlayerState, Track, BackgroundImage } from './types';
+import { ThemeMode, BackgroundMode, SongMetadata, PlayerState, Track, BackgroundImage } from './types';
 import { scanDirectory, scanLocal, scanFiles, getCoverArt, convertFileSrc, coverArtToDataUrl, getBackgrounds, onFileDrop } from './utils/tauri';
 import { extractDominantColor } from './utils/audioHelpers';
 
@@ -13,6 +14,7 @@ const App: React.FC = () => {
     const [activePlaylist, setActivePlaylist] = useState<Track[]>([]);
     const [currentTrackIndex, setCurrentTrackIndex] = useState<number>(0);
     const [theme, setTheme] = useState<ThemeMode>(ThemeMode.MONO);
+    const [activeBackgrounds, setActiveBackgrounds] = useState<BackgroundMode[]>([]);
     const [mobileView, setMobileView] = useState<'player' | 'settings' | 'queue'>('player');
     const [backgrounds, setBackgrounds] = useState<BackgroundImage[]>([]);
     const [currentBackground, setCurrentBackground] = useState<string | null>(null);
@@ -450,6 +452,13 @@ const App: React.FC = () => {
                 onDoubleClick={toggleFullscreen}
             />
             
+            {/* Dynamic Backgrounds */}
+            <DynamicBackground 
+                activeModes={activeBackgrounds}
+                theme={theme}
+                extractedColor={metadata.color}
+            />
+            
             {/* Background Visualizer */}
             <Visualizer 
                 analyser={analyser} 
@@ -464,6 +473,18 @@ const App: React.FC = () => {
                     backgrounds={backgrounds}
                     currentBackground={currentBackground}
                     onSetBackground={setCurrentBackground}
+                    activeBackgrounds={activeBackgrounds}
+                    onToggleBgMode={(mode) => {
+                        if (mode === BackgroundMode.NONE) {
+                            setActiveBackgrounds([]);
+                        } else {
+                            setActiveBackgrounds(prev => 
+                                prev.includes(mode)
+                                    ? prev.filter(m => m !== mode)
+                                    : [...prev, mode]
+                            );
+                        }
+                    }}
                     isOpenMobile={mobileView === 'settings'}
                     onCloseMobile={() => setMobileView('player')}
                 />
