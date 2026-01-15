@@ -47,7 +47,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentTheme, onSetTheme,
                         className={`block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${currentTheme === ThemeMode.MONO ? 'text-[var(--primary)] font-bold relative' : 'text-[var(--subtext)]'}`}
                     >
                         Monochrome
-                        {currentTheme === ThemeMode.MONO && <div className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
+                        {currentTheme === ThemeMode.MONO && <span className="hidden md:inline absolute -right-3 top-1 text-[var(--primary)]">•</span>}
                     </button>
 
                     <button 
@@ -55,7 +55,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentTheme, onSetTheme,
                         className={`block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${currentTheme === ThemeMode.ACCENT ? 'text-[var(--primary)] font-bold relative' : 'text-[var(--subtext)]'}`}
                     >
                         Cover Accent
-                        {currentTheme === ThemeMode.ACCENT && <div className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
+                         {currentTheme === ThemeMode.ACCENT && <span className="hidden md:inline absolute -right-3 top-1 text-[var(--primary)]">•</span>}
                     </button>
 
                     <button 
@@ -63,7 +63,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentTheme, onSetTheme,
                         className={`block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${currentTheme === ThemeMode.ADAPTIVE ? 'text-[var(--primary)] font-bold relative' : 'text-[var(--subtext)]'}`}
                     >
                         Adaptive
-                        {currentTheme === ThemeMode.ADAPTIVE && <div className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
+                         {currentTheme === ThemeMode.ADAPTIVE && <span className="hidden md:inline absolute -right-3 top-1 text-[var(--primary)]">•</span>}
                     </button>
                 </div>
 
@@ -76,7 +76,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentTheme, onSetTheme,
                         className={`block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${currentBackground === null ? 'text-[var(--primary)] font-bold relative' : 'text-[var(--subtext)]'}`}
                     >
                         None
-                        {currentBackground === null && <div className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
+                        {currentBackground === null && <span className="hidden md:inline absolute -right-3 top-1 text-[var(--primary)]">•</span>}
                     </button>
 
                     <div className="flex-1 overflow-y-auto overflow-x-hidden">
@@ -93,7 +93,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentTheme, onSetTheme,
                                 title={bg.name}
                             >
                                 {bg.name}
-                                {currentBackground === bg.path && <div className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
+                                {currentBackground === bg.path && <span className="hidden md:inline absolute -right-3 top-1/2 -translate-y-1/2 text-[var(--primary)]">•</span>}
                             </button>
                         ))}
                     </div>
