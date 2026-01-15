@@ -76,10 +76,13 @@ React + TypeScript
 | Three Color Themes | ✓ | ✓ |
 | Shuffle / Repeat | ✓ | ✓ |
 | Queue Management | ✓ | ✓ |
+| Mobile Responsive | ✓ | ✓ |
 | Custom Backgrounds | ✓ | - |
-| F11 Fullscreen | ✓ | ✓ |
-| Folder Scanning | ✓ | - |
+| F11 Fullscreen | ✓ | - |
+| Scan All Folders | ✓ | - |
+| Native File Picker | ✓ | - |
 | Drag & Drop | - | ✓ |
+| Works Offline | ✓ | - |
 
 <br>
 
