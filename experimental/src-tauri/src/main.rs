@@ -231,12 +231,11 @@ fn get_app_dir() -> Result<String, String> {
     Ok(app_dir.to_string_lossy().to_string())
 }
 
-/// Toggle fullscreen mode
+/// Toggle fullscreen mode - pure fullscreen without changing decorations
 #[tauri::command]
 async fn toggle_fullscreen(window: tauri::Window) -> Result<bool, String> {
     let is_fullscreen = window.is_fullscreen().map_err(|e| e.to_string())?;
     window.set_fullscreen(!is_fullscreen).map_err(|e| e.to_string())?;
-    window.set_decorations(is_fullscreen).map_err(|e| e.to_string())?;
     Ok(!is_fullscreen)
 }
 

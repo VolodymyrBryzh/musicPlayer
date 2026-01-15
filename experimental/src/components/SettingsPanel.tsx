@@ -68,8 +68,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentTheme, onSetTheme,
                 </div>
 
                 {/* Background Section */}
-                <div className="flex-1 overflow-hidden flex flex-col">
-                    <div className="text-[9px] text-[var(--subtext)] uppercase tracking-[1px] mb-3 md:text-right">Background</div>
+                <div className="flex-1 overflow-hidden flex flex-col md:text-right">
+                    <div className="text-[9px] text-[var(--subtext)] uppercase tracking-[1px] mb-3">Background</div>
                     
                     <button 
                         onClick={() => onSetBackground(null)}
@@ -79,9 +79,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentTheme, onSetTheme,
                         {currentBackground === null && <span className="hidden md:inline absolute -right-3 top-1 text-[var(--primary)]">•</span>}
                     </button>
 
-                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                    <div className="flex-1 overflow-y-auto overflow-x-hidden">
                         {backgrounds.length === 0 && (
-                            <div className="text-[var(--subtext)] text-[10px] opacity-50 italic md:text-right py-2">
+                            <div className="text-[var(--subtext)] text-[10px] opacity-50 italic py-2">
                                 Put images in /backgrounds
                             </div>
                         )}
@@ -89,10 +89,10 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentTheme, onSetTheme,
                             <button 
                                 key={bg.path}
                                 onClick={() => onSetBackground(bg.path)}
-                                className={`relative block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${currentBackground === bg.path ? 'text-[var(--primary)] font-bold' : 'text-[var(--subtext)]'}`}
+                                className={`relative block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] overflow-hidden text-ellipsis whitespace-nowrap ${currentBackground === bg.path ? 'text-[var(--primary)] font-bold' : 'text-[var(--subtext)]'}`}
                                 title={bg.name}
                             >
-                                <span className="block truncate">{bg.name}</span>
+                                {bg.name}
                                 {currentBackground === bg.path && <span className="hidden md:inline absolute -right-3 top-1/2 -translate-y-1/2 text-[var(--primary)]">•</span>}
                             </button>
                         ))}

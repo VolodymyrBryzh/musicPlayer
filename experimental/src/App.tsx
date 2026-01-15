@@ -72,7 +72,7 @@ const App: React.FC = () => {
                 return;
             }
             
-            // Escape to exit fullscreen - check if fullscreen first
+            // Escape to exit fullscreen
             if (e.key === 'Escape') {
                 try {
                     const { getCurrentWindow } = await import('@tauri-apps/api/window');
