@@ -34,33 +34,6 @@ const App: React.FC = () => {
     const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
     const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
 
-    // Initial Audio Setup
-    useEffect(() => {
-        const audio = audioRef.current;
-        audio.crossOrigin = "anonymous";
-        
-        const updateTime = () => setPlayerState(prev => ({ ...prev, currentTime: audio.currentTime }));
-        const updateDuration = () => setPlayerState(prev => ({ ...prev, duration: audio.duration }));
-        const handleEnded = () => {
-            if (playerState.isRepeatOne) {
-                audio.currentTime = 0;
-                audio.play();
-            } else {
-                playNext();
-            }
-        };
-
-        audio.addEventListener('timeupdate', updateTime);
-        audio.addEventListener('loadedmetadata', updateDuration);
-        audio.addEventListener('ended', handleEnded);
-
-        return () => {
-            audio.removeEventListener('timeupdate', updateTime);
-            audio.removeEventListener('loadedmetadata', updateDuration);
-            audio.removeEventListener('ended', handleEnded);
-        };
-    }, [playerState.isRepeatOne, activePlaylist]); // Re-bind if playlist changes to ensure closures capture new state
-
     // Initialize AudioContext on user interaction
     const initAudioContext = () => {
         if (!audioContextRef.current) {
@@ -124,13 +97,20 @@ const App: React.FC = () => {
         setOriginalFiles(sorted);
         
         let newPlaylist = [...sorted];
+        let startIndex = 0;
+
+        // If shuffle is ON, randomize immediately.
+        // If shuffle is OFF, keep A-Z but start at a random song as requested.
         if (playerState.isShuffle) {
             newPlaylist = newPlaylist.sort(() => Math.random() - 0.5);
+            // startIndex remains 0, which is the first of the random list
+        } else if (newPlaylist.length > 0) {
+            startIndex = Math.floor(Math.random() * newPlaylist.length);
         }
         
         setActivePlaylist(newPlaylist);
-        setCurrentTrackIndex(0);
-        loadTrack(0, newPlaylist);
+        setCurrentTrackIndex(startIndex);
+        loadTrack(startIndex, newPlaylist);
     };
 
     const playNext = () => {
@@ -146,6 +126,41 @@ const App: React.FC = () => {
         setCurrentTrackIndex(prevIndex);
         loadTrack(prevIndex);
     };
+
+    // Refs to hold latest functions/state for event listeners
+    const playNextRef = useRef(playNext);
+    playNextRef.current = playNext;
+
+    const isRepeatOneRef = useRef(playerState.isRepeatOne);
+    isRepeatOneRef.current = playerState.isRepeatOne;
+
+    // Initial Audio Setup with stable event listeners
+    useEffect(() => {
+        const audio = audioRef.current;
+        audio.crossOrigin = "anonymous";
+        
+        const updateTime = () => setPlayerState(prev => ({ ...prev, currentTime: audio.currentTime }));
+        const updateDuration = () => setPlayerState(prev => ({ ...prev, duration: audio.duration }));
+        
+        const handleEnded = () => {
+            if (isRepeatOneRef.current) {
+                audio.currentTime = 0;
+                audio.play();
+            } else {
+                playNextRef.current();
+            }
+        };
+
+        audio.addEventListener('timeupdate', updateTime);
+        audio.addEventListener('loadedmetadata', updateDuration);
+        audio.addEventListener('ended', handleEnded);
+
+        return () => {
+            audio.removeEventListener('timeupdate', updateTime);
+            audio.removeEventListener('loadedmetadata', updateDuration);
+            audio.removeEventListener('ended', handleEnded);
+        };
+    }, []); // Run once, rely on refs for dynamic logic
 
     const togglePlay = () => {
         if (activePlaylist.length === 0) return;
@@ -167,20 +182,26 @@ const App: React.FC = () => {
 
         const currentFile = activePlaylist[currentTrackIndex];
         let newPlaylist: File[];
+        let newIndex = 0;
 
         if (newShuffleState) {
-            // Enable Shuffle
+            // Enable Shuffle:
+            // 1. Get all other files
             const others = originalFiles.filter(f => f !== currentFile);
+            // 2. Shuffle them
             const shuffledOthers = others.sort(() => Math.random() - 0.5);
+            // 3. Put current file at top
             newPlaylist = [currentFile, ...shuffledOthers];
-            setCurrentTrackIndex(0);
+            newIndex = 0;
         } else {
-            // Disable Shuffle (restore original order)
+            // Disable Shuffle: Restore original order, find where current song is
             newPlaylist = [...originalFiles];
-            const newIndex = newPlaylist.indexOf(currentFile);
-            setCurrentTrackIndex(newIndex !== -1 ? newIndex : 0);
+            newIndex = newPlaylist.indexOf(currentFile);
+            if (newIndex === -1) newIndex = 0;
         }
+        
         setActivePlaylist(newPlaylist);
+        setCurrentTrackIndex(newIndex);
     };
 
     const seek = (percentage: number) => {
