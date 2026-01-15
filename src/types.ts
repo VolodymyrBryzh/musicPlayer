@@ -2,6 +2,7 @@ export enum ThemeMode {
     MONO = 'mono',
     ACCENT = 'accent',
     ADAPTIVE = 'adaptive',
+    BLACK_WHITE = 'black_white',
 }
 
 export interface SongMetadata {

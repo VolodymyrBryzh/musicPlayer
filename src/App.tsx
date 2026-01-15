@@ -387,7 +387,20 @@ const App: React.FC = () => {
             '--slider-bg': '#2a2a2a',
         };
 
-        if (theme === ThemeMode.MONO) {
+        if (theme === ThemeMode.BLACK_WHITE) {
+            return {
+                ...baseStyles,
+                '--bg': '#000000',
+                '--surface-main': 'rgba(0, 0, 0, 0.85)',
+                '--surface-side': 'rgba(0, 0, 0, 0.7)',
+                '--primary': '#ffffff',
+                '--slider-fill': '#ffffff',
+                '--text': '#ffffff',
+                '--subtext': '#888888',
+                '--border': '#333333',
+                '--slider-bg': '#333333',
+            } as CSSProperties;
+        } else if (theme === ThemeMode.MONO) {
             return {
                 ...baseStyles,
                 '--bg': '#050505',

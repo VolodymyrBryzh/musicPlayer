@@ -64,7 +64,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
                     <img 
                         src={metadata.coverUrl} 
                         alt="Cover" 
-                        className={`w-full h-full object-cover transition-all duration-500 ${theme === ThemeMode.MONO ? 'grayscale' : ''}`} 
+                        className={`w-full h-full object-cover transition-all duration-500 ${(theme === ThemeMode.MONO || theme === ThemeMode.BLACK_WHITE) ? 'grayscale' : ''}`} 
                     />
                 ) : (
                     <Music className="w-1/3 h-1/3 text-[#222]" />

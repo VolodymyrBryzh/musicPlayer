@@ -40,9 +40,10 @@ const Visualizer: React.FC<VisualizerProps> = ({ analyser, theme, extractedColor
             const barWidth = (canvas.width / bufferLength) * 2.5;
             let x = 0;
 
-            const r = (theme === ThemeMode.MONO || !extractedColor) ? 255 : extractedColor.r;
-            const g = (theme === ThemeMode.MONO || !extractedColor) ? 255 : extractedColor.g;
-            const b = (theme === ThemeMode.MONO || !extractedColor) ? 255 : extractedColor.b;
+            const isMono = theme === ThemeMode.MONO || theme === ThemeMode.BLACK_WHITE || !extractedColor;
+            const r = isMono ? 255 : extractedColor.r;
+            const g = isMono ? 255 : extractedColor.g;
+            const b = isMono ? 255 : extractedColor.b;
 
             for (let i = 0; i < bufferLength; i++) {
                 const barHeight = dataArray[i] * 1.5;

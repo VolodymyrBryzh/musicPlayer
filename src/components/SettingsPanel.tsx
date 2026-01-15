@@ -51,6 +51,14 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ currentTheme, onSetTheme,
                     </button>
 
                     <button 
+                        onClick={() => onSetTheme(ThemeMode.BLACK_WHITE)}
+                        className={`block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${currentTheme === ThemeMode.BLACK_WHITE ? 'text-[var(--primary)] font-bold relative' : 'text-[var(--subtext)]'}`}
+                    >
+                        Black & White
+                        {currentTheme === ThemeMode.BLACK_WHITE && <div className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
+                    </button>
+
+                    <button 
                         onClick={() => onSetTheme(ThemeMode.ACCENT)}
                         className={`block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${currentTheme === ThemeMode.ACCENT ? 'text-[var(--primary)] font-bold relative' : 'text-[var(--subtext)]'}`}
                     >
