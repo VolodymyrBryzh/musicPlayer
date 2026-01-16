@@ -21,7 +21,7 @@ interface BackgroundProps {
 
 ### Component Template
 
-Create a new file in `components/backgrounds/NameBackground.tsx`. Use this boilerplate:
+Create a new file in `components/effects/NameBackground.tsx`. Use this boilerplate:
 
 ```tsx
 import React, { useEffect, useRef } from 'react';
@@ -109,7 +109,7 @@ export enum BackgroundMode {
 Open `components/DynamicBackground.tsx`. Import your component and add a conditional render.
 
 ```tsx
-import NewBackground from './backgrounds/NewBackground';
+import NewBackground from './effects/NewBackground';
 
 // ... inside the component return:
 {activeModes.includes(BackgroundMode.NEW_MODE) && (

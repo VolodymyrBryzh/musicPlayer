@@ -44,7 +44,7 @@ const App: React.FC = () => {
             const ctx = new AudioContextClass();
             const analyserNode = ctx.createAnalyser();
             analyserNode.fftSize = 256;
-            
+
             const source = ctx.createMediaElementSource(audioRef.current);
             source.connect(analyserNode);
             analyserNode.connect(ctx.destination);
@@ -61,7 +61,7 @@ const App: React.FC = () => {
     // Load Track Logic
     const loadTrack = async (index: number, files: File[] = activePlaylist) => {
         if (files.length === 0) return;
-        
+
         const file = files[index];
         const audio = audioRef.current;
 
@@ -69,7 +69,7 @@ const App: React.FC = () => {
         if (metadata.coverUrl) {
             URL.revokeObjectURL(metadata.coverUrl);
         }
-        
+
         // Load metadata
         const meta = await parseMetadata(file);
         setMetadata(meta);
@@ -80,12 +80,12 @@ const App: React.FC = () => {
         if (audio.src.startsWith('blob:')) {
             URL.revokeObjectURL(audio.src);
         }
-        
+
         audio.src = objectUrl;
         audio.load();
-        
+
         initAudioContext();
-        
+
         try {
             await audio.play();
             setPlayerState(prev => ({ ...prev, isPlaying: true }));
@@ -98,17 +98,14 @@ const App: React.FC = () => {
     const handleFilesSelected = (files: File[]) => {
         const sorted = files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
         setOriginalFiles(sorted);
-        
-        let newPlaylist = [...sorted];
+
+        // Automatically enable shuffle when importing
+        setPlayerState(prev => ({ ...prev, isShuffle: true }));
+
+        // Shuffle the playlist immediately
+        let newPlaylist = [...sorted].sort(() => Math.random() - 0.5);
         let startIndex = 0;
 
-        // If shuffle is ON, randomize immediately.
-        if (playerState.isShuffle) {
-            newPlaylist = newPlaylist.sort(() => Math.random() - 0.5);
-        } else if (newPlaylist.length > 0) {
-            startIndex = Math.floor(Math.random() * newPlaylist.length);
-        }
-        
         setActivePlaylist(newPlaylist);
         setCurrentTrackIndex(startIndex);
         loadTrack(startIndex, newPlaylist);
@@ -139,10 +136,10 @@ const App: React.FC = () => {
     useEffect(() => {
         const audio = audioRef.current;
         audio.crossOrigin = "anonymous";
-        
+
         const updateTime = () => setPlayerState(prev => ({ ...prev, currentTime: audio.currentTime }));
         const updateDuration = () => setPlayerState(prev => ({ ...prev, duration: audio.duration }));
-        
+
         const handleEnded = () => {
             if (isRepeatOneRef.current) {
                 audio.currentTime = 0;
@@ -161,7 +158,7 @@ const App: React.FC = () => {
             audio.removeEventListener('loadedmetadata', updateDuration);
             audio.removeEventListener('ended', handleEnded);
         };
-    }, []); 
+    }, []);
 
     const togglePlay = () => {
         if (activePlaylist.length === 0) return;
@@ -178,7 +175,7 @@ const App: React.FC = () => {
     const toggleShuffle = () => {
         const newShuffleState = !playerState.isShuffle;
         setPlayerState(prev => ({ ...prev, isShuffle: newShuffleState }));
-        
+
         if (activePlaylist.length === 0) return;
 
         const currentFile = activePlaylist[currentTrackIndex];
@@ -195,7 +192,7 @@ const App: React.FC = () => {
             newIndex = newPlaylist.indexOf(currentFile);
             if (newIndex === -1) newIndex = 0;
         }
-        
+
         setActivePlaylist(newPlaylist);
         setCurrentTrackIndex(newIndex);
     };
@@ -254,7 +251,7 @@ const App: React.FC = () => {
         };
 
         if (theme === ThemeMode.BLACK_WHITE) {
-             return {
+            return {
                 ...baseStyles,
                 '--bg': '#000000',
                 '--surface-main': 'rgba(0, 0, 0, 0.85)',
@@ -302,7 +299,7 @@ const App: React.FC = () => {
     };
 
     return (
-        <div 
+        <div
             className="flex justify-center items-center h-screen w-screen overflow-hidden select-none font-sans"
             style={getThemeStyles()}
             onDragEnter={handleDragEnter}
@@ -310,31 +307,31 @@ const App: React.FC = () => {
             onDrop={handleDrop}
         >
             {/* Background Layer z-[1] */}
-            <DynamicBackground 
-                activeModes={activeBackgrounds} 
+            <DynamicBackground
+                activeModes={activeBackgrounds}
                 theme={theme}
-                extractedColor={metadata.color} 
+                extractedColor={metadata.color}
             />
 
             {/* Visualizer Layer z-[2] */}
-            <Visualizer 
-                analyser={analyser} 
-                theme={theme} 
-                extractedColor={metadata.color} 
+            <Visualizer
+                analyser={analyser}
+                theme={theme}
+                extractedColor={metadata.color}
             />
 
             {/* UI Layer z-10/20 */}
             <div className="flex flex-col md:flex-row items-center justify-center relative z-20 w-full h-full md:w-auto md:h-auto">
-                <SettingsPanel 
-                    currentTheme={theme} 
+                <SettingsPanel
+                    currentTheme={theme}
                     onSetTheme={setTheme}
                     activeBackgrounds={activeBackgrounds}
                     onToggleBgMode={toggleBackgroundMode}
                     isOpenMobile={mobileView === 'settings'}
                     onCloseMobile={() => setMobileView('player')}
                 />
-                
-                <PlayerControls 
+
+                <PlayerControls
                     metadata={metadata}
                     playerState={playerState}
                     theme={theme}
@@ -348,7 +345,7 @@ const App: React.FC = () => {
                     onOpenQueue={() => setMobileView('queue')}
                 />
 
-                <QueueList 
+                <QueueList
                     playlist={activePlaylist}
                     currentTrackIndex={currentTrackIndex}
                     onTrackSelect={(idx) => { setCurrentTrackIndex(idx); loadTrack(idx); }}

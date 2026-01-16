@@ -11,13 +11,13 @@ interface SettingsPanelProps {
     onCloseMobile: () => void;
 }
 
-const SettingsPanel: React.FC<SettingsPanelProps> = ({ 
-    currentTheme, 
-    onSetTheme, 
-    activeBackgrounds, 
-    onToggleBgMode, 
-    isOpenMobile, 
-    onCloseMobile 
+const SettingsPanel: React.FC<SettingsPanelProps> = ({
+    currentTheme,
+    onSetTheme,
+    activeBackgrounds,
+    onToggleBgMode,
+    isOpenMobile,
+    onCloseMobile
 }) => {
     // Dynamic classes based on mobile state
     // Reduced height from 480px to 420px to match QueueList
@@ -28,12 +28,13 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
     const isStatic = activeBackgrounds.length === 0 || (activeBackgrounds.length === 1 && activeBackgrounds[0] === BackgroundMode.NONE);
     const isAurora = activeBackgrounds.includes(BackgroundMode.AURORA);
     const isParticles = activeBackgrounds.includes(BackgroundMode.PARTICLES);
+    const isCircles = activeBackgrounds.includes(BackgroundMode.CIRCLES);
 
     return (
         <>
             {/* Mobile Backdrop */}
             {isOpenMobile && (
-                <div 
+                <div
                     className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm"
                     onClick={onCloseMobile}
                 />
@@ -53,8 +54,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 <div className="mb-5 md:text-right flex-grow overflow-y-auto custom-scrollbar">
                     {/* Color Theme Section */}
                     <div className="text-[9px] text-[var(--subtext)] uppercase tracking-[1px] mb-4 md:mb-2">Color Theme</div>
-                    
-                    <button 
+
+                    <button
                         onClick={() => onSetTheme(ThemeMode.MONO)}
                         className={`block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${currentTheme === ThemeMode.MONO ? 'text-[var(--primary)] font-bold relative' : 'text-[var(--subtext)]'}`}
                     >
@@ -62,7 +63,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                         {currentTheme === ThemeMode.MONO && <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
                     </button>
 
-                    <button 
+                    <button
                         onClick={() => onSetTheme(ThemeMode.BLACK_WHITE)}
                         className={`block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${currentTheme === ThemeMode.BLACK_WHITE ? 'text-[var(--primary)] font-bold relative' : 'text-[var(--subtext)]'}`}
                     >
@@ -70,51 +71,59 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                         {currentTheme === ThemeMode.BLACK_WHITE && <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
                     </button>
 
-                    <button 
+                    <button
                         onClick={() => onSetTheme(ThemeMode.ACCENT)}
                         className={`block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${currentTheme === ThemeMode.ACCENT ? 'text-[var(--primary)] font-bold relative' : 'text-[var(--subtext)]'}`}
                     >
                         Cover Accent
-                         {currentTheme === ThemeMode.ACCENT && <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
+                        {currentTheme === ThemeMode.ACCENT && <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
                     </button>
 
-                    <button 
+                    <button
                         onClick={() => onSetTheme(ThemeMode.ADAPTIVE)}
                         className={`block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${currentTheme === ThemeMode.ADAPTIVE ? 'text-[var(--primary)] font-bold relative' : 'text-[var(--subtext)]'}`}
                     >
                         Adaptive
-                         {currentTheme === ThemeMode.ADAPTIVE && <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
+                        {currentTheme === ThemeMode.ADAPTIVE && <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
                     </button>
 
                     {/* Dynamic Background Section */}
                     <div className="text-[9px] text-[var(--subtext)] uppercase tracking-[1px] mt-6 mb-4 md:mb-2">Effects</div>
-                    
-                    <button 
+
+                    <button
                         onClick={() => onToggleBgMode(BackgroundMode.NONE)}
                         className={`block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${isStatic ? 'text-[var(--primary)] font-bold relative' : 'text-[var(--subtext)]'}`}
                     >
                         None
-                         {isStatic && <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
+                        {isStatic && <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
                     </button>
 
-                    <button 
+                    <button
                         onClick={() => onToggleBgMode(BackgroundMode.AURORA)}
                         className={`block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${isAurora ? 'text-[var(--primary)] font-bold relative' : 'text-[var(--subtext)]'}`}
                     >
                         Aurora
-                         {isAurora && <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
+                        {isAurora && <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
                     </button>
 
-                    <button 
+                    <button
                         onClick={() => onToggleBgMode(BackgroundMode.PARTICLES)}
                         className={`block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${isParticles ? 'text-[var(--primary)] font-bold relative' : 'text-[var(--subtext)]'}`}
                     >
                         Particles
-                         {isParticles && <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
+                        {isParticles && <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
+                    </button>
+
+                    <button
+                        onClick={() => onToggleBgMode(BackgroundMode.CIRCLES)}
+                        className={`block w-full text-left md:text-right bg-transparent border-none text-[13px] md:text-[11px] py-2 md:py-1 cursor-pointer transition-colors duration-200 hover:text-[var(--text)] ${isCircles ? 'text-[var(--primary)] font-bold relative' : 'text-[var(--subtext)]'}`}
+                    >
+                        Circles
+                        {isCircles && <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[var(--primary)] shadow-[0_0_4px_var(--primary)]" />}
                     </button>
                 </div>
 
-                <a 
+                <a
                     href="https://github.com/VolodymyrBryzh/musicPlayer.git"
                     target="_blank"
                     rel="noopener noreferrer"

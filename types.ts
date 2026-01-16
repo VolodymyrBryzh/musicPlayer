@@ -9,6 +9,7 @@ export enum BackgroundMode {
     NONE = 'none',
     AURORA = 'aurora',
     PARTICLES = 'particles',
+    CIRCLES = 'circles',
 }
 
 export interface SongMetadata {

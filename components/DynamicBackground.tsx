@@ -1,7 +1,8 @@
 import React from 'react';
 import { BackgroundMode, ThemeMode } from '../types';
-import AuroraBackground from './backgrounds/AuroraBackground';
-import ParticlesBackground from './backgrounds/ParticlesBackground';
+import AuroraBackground from './effects/AuroraBackground';
+import ParticlesBackground from './effects/ParticlesBackground';
+import FloatingCircles from './effects/FloatingCircles';
 
 interface DynamicBackgroundProps {
     activeModes: BackgroundMode[];
@@ -17,6 +18,9 @@ const DynamicBackground: React.FC<DynamicBackgroundProps> = ({ activeModes, them
             )}
             {activeModes.includes(BackgroundMode.PARTICLES) && (
                 <ParticlesBackground theme={theme} extractedColor={extractedColor} />
+            )}
+            {activeModes.includes(BackgroundMode.CIRCLES) && (
+                <FloatingCircles theme={theme} extractedColor={extractedColor} />
             )}
         </>
     );
