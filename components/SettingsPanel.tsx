@@ -22,8 +22,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
     // Dynamic classes based on mobile state
     // Reduced height from 480px to 420px to match QueueList
     const containerClasses = isOpenMobile
-        ? "fixed inset-0 z-50 m-auto w-[85%] max-w-[300px] h-[500px] rounded-[15px] border border-[var(--border)] bg-[var(--surface-main)] backdrop-blur-xl shadow-2xl flex flex-col p-[30px]"
-        : "hidden md:flex bg-[var(--surface-side)] backdrop-blur-xl w-[220px] h-[420px] rounded-l-[15px] border border-[var(--border)] border-r-0 relative z-20 -mr-[15px] p-[20px] pr-[30px] flex-col shadow-[-5px_10px_30px_rgba(0,0,0,0.4)]";
+        ? "fixed inset-x-4 top-1/2 -translate-y-1/2 z-50 m-auto w-[calc(100%-32px)] max-w-[340px] h-fit max-h-[90dvh] rounded-[24px] border border-[var(--border)] bg-[var(--surface-main)] backdrop-blur-2xl shadow-[0_0_100px_rgba(0,0,0,0.9)] flex flex-col p-6 overflow-hidden"
+        : "hidden md:flex bg-[var(--surface-side)] backdrop-blur-xl w-[240px] h-[450px] rounded-l-[24px] border border-[var(--border)] border-r-0 relative z-20 -mr-[15px] p-6 pr-8 flex-col shadow-[-10px_10px_40px_rgba(0,0,0,0.5)]";
 
     const isStatic = activeBackgrounds.length === 0 || (activeBackgrounds.length === 1 && activeBackgrounds[0] === BackgroundMode.NONE);
     const isAurora = activeBackgrounds.includes(BackgroundMode.AURORA);

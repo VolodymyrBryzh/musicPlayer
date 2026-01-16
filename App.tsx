@@ -312,7 +312,7 @@ const App: React.FC = () => {
 
     return (
         <div
-            className="flex justify-center items-center h-screen w-screen overflow-hidden select-none font-sans"
+            className="flex justify-center items-center h-[100dvh] w-screen overflow-hidden select-none font-sans bg-black"
             style={getThemeStyles()}
             onDragEnter={handleDragEnter}
             onDragOver={handleDragOver}
@@ -334,7 +334,7 @@ const App: React.FC = () => {
             />
 
             {/* UI Layer z-10/20 */}
-            <div className="flex flex-col md:flex-row items-center justify-center relative z-20 w-full h-full md:w-auto md:h-auto">
+            <div className="flex flex-col md:flex-row items-center justify-center relative z-20 w-full h-full p-4 md:p-8 overflow-hidden">
                 <SettingsPanel
                     currentTheme={theme}
                     onSetTheme={setTheme}
