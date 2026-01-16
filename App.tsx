@@ -298,6 +298,18 @@ const App: React.FC = () => {
         }
     };
 
+    const toggleFullScreen = () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {
+                console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+            });
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+        }
+    };
+
     return (
         <div
             className="flex justify-center items-center h-screen w-screen overflow-hidden select-none font-sans"
@@ -305,6 +317,7 @@ const App: React.FC = () => {
             onDragEnter={handleDragEnter}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
+            onDoubleClick={toggleFullScreen}
         >
             {/* Background Layer z-[1] */}
             <DynamicBackground
