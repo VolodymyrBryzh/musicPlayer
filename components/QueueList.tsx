@@ -1,17 +1,19 @@
 import React, { useRef } from 'react';
 import { X } from 'lucide-react';
 import { getAudioFilesFromDataTransfer } from '../utils/audioHelpers';
+import { isAndroid, pickMusicDirectory } from '../utils/androidBridge';
+import { Track } from '../types';
 
 interface QueueListProps {
-    playlist: File[];
+    playlist: Track[];
     currentTrackIndex: number;
     onTrackSelect: (index: number) => void;
-    onFilesSelected: (files: File[]) => void;
+    onTracksAdded: (tracks: Track[]) => void;
     isOpenMobile: boolean;
     onCloseMobile: () => void;
 }
 
-const QueueList: React.FC<QueueListProps> = ({ playlist, currentTrackIndex, onTrackSelect, onFilesSelected, isOpenMobile, onCloseMobile }) => {
+const QueueList: React.FC<QueueListProps> = ({ playlist, currentTrackIndex, onTrackSelect, onTracksAdded, isOpenMobile, onCloseMobile }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const activeItemRef = useRef<HTMLDivElement>(null);
 
@@ -24,9 +26,8 @@ const QueueList: React.FC<QueueListProps> = ({ playlist, currentTrackIndex, onTr
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
-            const files = (Array.from(e.target.files) as File[]).filter(file => file.type.startsWith('audio/'));
-            onFilesSelected(files);
-            // On mobile, close queue after selecting (optional, but good UX)
+            const files = Array.from(e.target.files).filter(file => file.type.startsWith('audio/'));
+            onTracksAdded(files.map(f => ({ name: f.name, file: f })));
             if (isOpenMobile) onCloseMobile();
         }
     };
@@ -43,8 +44,17 @@ const QueueList: React.FC<QueueListProps> = ({ playlist, currentTrackIndex, onTr
 
         const files = await getAudioFilesFromDataTransfer(e.dataTransfer);
         if (files.length > 0) {
-            onFilesSelected(files);
+            onTracksAdded(files.map(f => ({ name: f.name, file: f })));
             if (isOpenMobile) onCloseMobile();
+        }
+    };
+
+    const handleSelectFolder = async () => {
+        if (isAndroid) {
+            const tracks = await pickMusicDirectory();
+            if (tracks.length > 0) onTracksAdded(tracks);
+        } else {
+            fileInputRef.current?.click();
         }
     };
 
@@ -84,9 +94,9 @@ const QueueList: React.FC<QueueListProps> = ({ playlist, currentTrackIndex, onTr
                             Queue is empty
                         </div>
                     )}
-                    {playlist.map((file, index) => {
+                    {playlist.map((track, index) => {
                         const isActive = index === currentTrackIndex;
-                        const name = file.name.replace(/\.[^/.]+$/, "");
+                        const name = track.name.replace(/\.[^/.]+$/, "");
                         return (
                             <div
                                 key={index}
@@ -116,10 +126,10 @@ const QueueList: React.FC<QueueListProps> = ({ playlist, currentTrackIndex, onTr
                 />
 
                 <button
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={handleSelectFolder}
                     className="w-full text-[10px] text-[var(--subtext)] border border-[var(--border)] py-3 md:py-2.5 rounded bg-transparent uppercase tracking-wider transition-all duration-200 hover:border-[#444] hover:text-[var(--primary)] hover:bg-white/5 cursor-pointer shrink-0"
                 >
-                    Select Folder
+                    {isAndroid ? 'Select Music Folder' : 'Select Folder'}
                 </button>
             </div>
         </>

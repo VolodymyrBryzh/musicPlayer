@@ -1,4 +1,6 @@
 import { SongMetadata } from '../types';
+import { Filesystem } from '@capacitor/filesystem';
+import { Capacitor } from '@capacitor/core';
 
 export const formatTime = (time: number): string => {
     if (isNaN(time)) return '0:00';
@@ -86,33 +88,46 @@ export const getAudioFilesFromDataTransfer = async (dataTransfer: DataTransfer):
         }
         await Promise.all(promises);
     }
-    
+
     // Fallback: if we didn't find anything via items (or items API not supported), try standard files list
     if (files.length === 0 && dataTransfer.files.length > 0) {
         Array.from(dataTransfer.files).forEach(file => {
-             if (file.type.startsWith('audio/') || /\.(mp3|wav|ogg|m4a|flac)$/i.test(file.name)) {
-                 files.push(file);
-             }
+            if (file.type.startsWith('audio/') || /\.(mp3|wav|ogg|m4a|flac)$/i.test(file.name)) {
+                files.push(file);
+            }
         });
     }
 
     return files;
 };
 
-export const parseMetadata = async (file: File): Promise<SongMetadata> => {
+export const parseMetadata = async (target: File | string): Promise<SongMetadata> => {
+    const isPath = typeof target === 'string';
+    const name = isPath ? target.split('/').pop() || 'Unknown' : target.name;
     const defaultMeta: SongMetadata = {
-        title: file.name.replace(/\.[^/.]+$/, ""),
+        title: name.replace(/\.[^/.]+$/, ""),
         artist: "Unknown Artist",
         coverUrl: null,
         color: null,
     };
 
-    if (file.type !== "audio/mpeg" && !file.name.toLowerCase().endsWith(".mp3")) {
-        return defaultMeta;
-    }
-
     try {
-        const buffer = await file.slice(0, 512 * 1024).arrayBuffer();
+        let buffer: ArrayBuffer;
+        if (isPath) {
+            const result = await Filesystem.readFile({
+                path: target
+            });
+            const base64 = result.data as string;
+            const binaryString = atob(base64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            buffer = bytes.buffer;
+        } else {
+            buffer = await target.slice(0, 512 * 1024).arrayBuffer();
+        }
+
         const view = new DataView(buffer);
 
         if (view.getUint8(0) !== 0x49 || view.getUint8(1) !== 0x44 || view.getUint8(2) !== 0x33) {

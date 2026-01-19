@@ -26,3 +26,11 @@ export interface PlayerState {
     isShuffle: boolean;
     isRepeatOne: boolean;
 }
+
+export interface Track {
+    name: string;
+    path?: string;
+    file?: File;
+    url?: string;
+    metadata?: SongMetadata;
+}

@@ -4,16 +4,16 @@ import DynamicBackground from './components/DynamicBackground';
 import SettingsPanel from './components/SettingsPanel';
 import PlayerControls from './components/PlayerControls';
 import QueueList from './components/QueueList';
-import { ThemeMode, BackgroundMode, SongMetadata, PlayerState } from './types';
+import { ThemeMode, BackgroundMode, SongMetadata, PlayerState, Track } from './types';
 import { parseMetadata, getAudioFilesFromDataTransfer } from './utils/audioHelpers';
+import { updateMediaSession, initMediaSession, scanMusicFiles, isAndroid } from './utils/androidBridge';
 
 const App: React.FC = () => {
     // State
-    const [originalFiles, setOriginalFiles] = useState<File[]>([]);
-    const [activePlaylist, setActivePlaylist] = useState<File[]>([]);
+    const [originalTracks, setOriginalTracks] = useState<Track[]>([]);
+    const [activePlaylist, setActivePlaylist] = useState<Track[]>([]);
     const [currentTrackIndex, setCurrentTrackIndex] = useState<number>(0);
     const [theme, setTheme] = useState<ThemeMode>(ThemeMode.MONO);
-    // Background Mode is now an array to support multiple simultaneous effects
     const [activeBackgrounds, setActiveBackgrounds] = useState<BackgroundMode[]>([]);
     const [mobileView, setMobileView] = useState<'player' | 'settings' | 'queue'>('player');
     const [metadata, setMetadata] = useState<SongMetadata>({
@@ -59,29 +59,42 @@ const App: React.FC = () => {
     };
 
     // Load Track Logic
-    const loadTrack = async (index: number, files: File[] = activePlaylist) => {
-        if (files.length === 0) return;
+    const loadTrack = async (index: number, tracks: Track[] = activePlaylist) => {
+        if (tracks.length === 0) return;
 
-        const file = files[index];
+        const track = tracks[index];
         const audio = audioRef.current;
 
-        // Revoke previous cover URL to prevent memory leaks
-        if (metadata.coverUrl) {
+        // Revoke previous cover URL if it was a blob
+        if (metadata.coverUrl && metadata.coverUrl.startsWith('blob:')) {
             URL.revokeObjectURL(metadata.coverUrl);
         }
 
         // Load metadata
-        const meta = await parseMetadata(file);
+        const meta = await parseMetadata(track.file || track.path!);
         setMetadata(meta);
 
+        // Update Android Media Session
+        updateMediaSession({
+            title: meta.title,
+            artist: meta.artist,
+            coverUrl: meta.coverUrl
+        });
+
         // Load Audio
-        const objectUrl = URL.createObjectURL(file);
+        let src = '';
+        if (track.url) {
+            src = track.url;
+        } else if (track.file) {
+            src = URL.createObjectURL(track.file);
+        }
+
         // Revoke previous audio object URL if it was a blob
         if (audio.src.startsWith('blob:')) {
             URL.revokeObjectURL(audio.src);
         }
 
-        audio.src = objectUrl;
+        audio.src = src;
         audio.load();
 
         initAudioContext();
@@ -95,9 +108,9 @@ const App: React.FC = () => {
         }
     };
 
-    const handleFilesSelected = (files: File[]) => {
-        const sorted = files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
-        setOriginalFiles(sorted);
+    const handleTracksAdded = (newTracks: Track[]) => {
+        const sorted = newTracks.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+        setOriginalTracks(sorted);
 
         // Automatically enable shuffle when importing
         setPlayerState(prev => ({ ...prev, isShuffle: true }));
@@ -125,14 +138,15 @@ const App: React.FC = () => {
         loadTrack(prevIndex);
     };
 
-    // Refs to hold latest functions/state for event listeners
     const playNextRef = useRef(playNext);
     playNextRef.current = playNext;
+
+    const playPrevRef = useRef(playPrev);
+    playPrevRef.current = playPrev;
 
     const isRepeatOneRef = useRef(playerState.isRepeatOne);
     isRepeatOneRef.current = playerState.isRepeatOne;
 
-    // Initial Audio Setup with stable event listeners
     useEffect(() => {
         const audio = audioRef.current;
         audio.crossOrigin = "anonymous";
@@ -152,6 +166,26 @@ const App: React.FC = () => {
         audio.addEventListener('timeupdate', updateTime);
         audio.addEventListener('loadedmetadata', updateDuration);
         audio.addEventListener('ended', handleEnded);
+
+        // Initialize Media Session for Android
+        initMediaSession({
+            onPlay: () => audio.play(),
+            onPause: () => audio.pause(),
+            onNext: () => playNextRef.current(),
+            onPrev: () => playPrevRef.current(),
+            onSeek: (time) => { audio.currentTime = time; }
+        });
+
+        // Auto-scan music if on Android
+        if (isAndroid) {
+            setTimeout(() => {
+                scanMusicFiles().then(tracks => {
+                    if (tracks.length > 0) {
+                        handleTracksAdded(tracks);
+                    }
+                });
+            }, 1000); // Give some time for everything to initialize
+        }
 
         return () => {
             audio.removeEventListener('timeupdate', updateTime);
@@ -178,18 +212,18 @@ const App: React.FC = () => {
 
         if (activePlaylist.length === 0) return;
 
-        const currentFile = activePlaylist[currentTrackIndex];
-        let newPlaylist: File[];
+        const currentTrack = activePlaylist[currentTrackIndex];
+        let newPlaylist: Track[];
         let newIndex = 0;
 
         if (newShuffleState) {
-            const others = originalFiles.filter(f => f !== currentFile);
+            const others = originalTracks.filter(t => t !== currentTrack);
             const shuffledOthers = others.sort(() => Math.random() - 0.5);
-            newPlaylist = [currentFile, ...shuffledOthers];
+            newPlaylist = [currentTrack, ...shuffledOthers];
             newIndex = 0;
         } else {
-            newPlaylist = [...originalFiles];
-            newIndex = newPlaylist.indexOf(currentFile);
+            newPlaylist = [...originalTracks];
+            newIndex = newPlaylist.indexOf(currentTrack);
             if (newIndex === -1) newIndex = 0;
         }
 
@@ -234,10 +268,9 @@ const App: React.FC = () => {
         e.preventDefault();
         e.stopPropagation();
         const files = await getAudioFilesFromDataTransfer(e.dataTransfer);
-        if (files.length > 0) handleFilesSelected(files);
+        if (files.length > 0) handleTracksAdded(files.map(f => ({ name: f.name, file: f })));
     };
 
-    // Construct Dynamic CSS Variables based on Theme
     const getThemeStyles = (): CSSProperties => {
         const { color } = metadata;
         const r = color?.r ?? 255;
@@ -284,7 +317,6 @@ const App: React.FC = () => {
                 '--border': 'rgba(31, 31, 31, 0.5)',
             } as CSSProperties;
         } else {
-            // Adaptive
             return {
                 ...baseStyles,
                 '--bg': `rgb(${Math.floor(r * 0.1)},${Math.floor(g * 0.1)},${Math.floor(b * 0.1)})`,
@@ -319,21 +351,18 @@ const App: React.FC = () => {
             onDrop={handleDrop}
             onDoubleClick={toggleFullScreen}
         >
-            {/* Background Layer z-[1] */}
             <DynamicBackground
                 activeModes={activeBackgrounds}
                 theme={theme}
                 extractedColor={metadata.color}
             />
 
-            {/* Visualizer Layer z-[2] */}
             <Visualizer
                 analyser={analyser}
                 theme={theme}
                 extractedColor={metadata.color}
             />
 
-            {/* UI Layer z-10/20 */}
             <div className="flex flex-col md:flex-row items-center justify-center relative z-20 w-full h-full p-4 md:p-8 overflow-hidden">
                 <SettingsPanel
                     currentTheme={theme}
@@ -362,7 +391,7 @@ const App: React.FC = () => {
                     playlist={activePlaylist}
                     currentTrackIndex={currentTrackIndex}
                     onTrackSelect={(idx) => { setCurrentTrackIndex(idx); loadTrack(idx); }}
-                    onFilesSelected={handleFilesSelected}
+                    onTracksAdded={handleTracksAdded}
                     isOpenMobile={mobileView === 'queue'}
                     onCloseMobile={() => setMobileView('player')}
                 />
