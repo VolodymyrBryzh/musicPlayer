@@ -6,7 +6,6 @@ import PlayerControls from './components/PlayerControls';
 import QueueList from './components/QueueList';
 import { ThemeMode, BackgroundMode, SongMetadata, PlayerState } from './types';
 import { parseMetadata, getAudioFilesFromDataTransfer } from './utils/audioHelpers';
-import { updateMediaSession, initMediaSession } from './utils/androidBridge';
 
 const App: React.FC = () => {
     // State
@@ -75,13 +74,6 @@ const App: React.FC = () => {
         const meta = await parseMetadata(file);
         setMetadata(meta);
 
-        // Update Android Media Session
-        updateMediaSession({
-            title: meta.title,
-            artist: meta.artist,
-            coverUrl: meta.coverUrl
-        });
-
         // Load Audio
         const objectUrl = URL.createObjectURL(file);
         // Revoke previous audio object URL if it was a blob
@@ -140,9 +132,6 @@ const App: React.FC = () => {
     const isRepeatOneRef = useRef(playerState.isRepeatOne);
     isRepeatOneRef.current = playerState.isRepeatOne;
 
-    const playPrevRef = useRef(playPrev);
-    playPrevRef.current = playPrev;
-
     // Initial Audio Setup with stable event listeners
     useEffect(() => {
         const audio = audioRef.current;
@@ -163,15 +152,6 @@ const App: React.FC = () => {
         audio.addEventListener('timeupdate', updateTime);
         audio.addEventListener('loadedmetadata', updateDuration);
         audio.addEventListener('ended', handleEnded);
-
-        // Initialize Media Session for Android
-        initMediaSession({
-            onPlay: () => audio.play(),
-            onPause: () => audio.pause(),
-            onNext: () => playNextRef.current(),
-            onPrev: () => playPrevRef.current(),
-            onSeek: (time) => { audio.currentTime = time; }
-        });
 
         return () => {
             audio.removeEventListener('timeupdate', updateTime);

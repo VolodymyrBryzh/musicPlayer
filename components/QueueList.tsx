@@ -1,7 +1,6 @@
 import React, { useRef } from 'react';
 import { X } from 'lucide-react';
 import { getAudioFilesFromDataTransfer } from '../utils/audioHelpers';
-import { isAndroid } from '../utils/androidBridge';
 
 interface QueueListProps {
     playlist: File[];
@@ -122,12 +121,6 @@ const QueueList: React.FC<QueueListProps> = ({ playlist, currentTrackIndex, onTr
                 >
                     Select Folder
                 </button>
-
-                {isAndroid && (
-                    <div className="text-[9px] text-[var(--subtext)] text-center mt-2 opacity-50">
-                        Use 'Select Folder' to add local music
-                    </div>
-                )}
             </div>
         </>
     );
